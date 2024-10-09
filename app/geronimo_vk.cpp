@@ -34,19 +34,18 @@ int main(int argc, char** argv)
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	window.OnRender = [&currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass, &phongPipeline, &syncService]
 	(app::Window* wnd) {
-		uint32_t imageIndex;
 		//TODO vulkan: do the rendering loop
 		//TODO vulkan: begin the frame
 		vk::Frame frame(commandBuffers,currentFrameId, syncService, *mainRenderPass.GetSwapChain());
 		frame.BeginFrame();
 		//TODO vulkan: activate the render passes
-		shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), imageIndex, currentFrameId);
+		//shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		////TODO vulkan: activate pipelines that use the render pass
 		//directionaLightShadowMapPipeline->Bind();
 		////TODO vulkan: draw meshes
 		//TODO vulkan: end the render pass
-		shadowMapRenderPass.EndRenderPass(frame.CommandBuffer());
-		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), imageIndex, currentFrameId);
+		//shadowMapRenderPass.EndRenderPass(frame.CommandBuffer());
+		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		//TODO vulkan: activate pipelines that use the render pass
 		phongPipeline->Bind(frame.CommandBuffer(), currentFrameId);
 		//TODO vulkan: draw meshes

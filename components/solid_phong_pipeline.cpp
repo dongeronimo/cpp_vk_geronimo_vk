@@ -18,7 +18,7 @@ namespace components
         CreateDescriptorPool();
         CreateCameraBuffer();
         CreateDescriptorSet();
-        //CreatePipelineLayout();
+        CreatePipelineLayout();
         //assert(mPipelineLayout != VK_NULL_HANDLE);
         ////Load the shaders////
         mVertexShader = vk::LoadShaderModule(device, "phong.vert.spv");
@@ -38,10 +38,14 @@ namespace components
 
         VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
+        auto attributes = AttributeDescription();
+        auto bindings = BindingDescription();
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.vertexAttributeDescriptionCount = 0;
+        vertexInputInfo.vertexBindingDescriptionCount = 1;
+        vertexInputInfo.pVertexBindingDescriptions = &bindings;
+        vertexInputInfo.vertexAttributeDescriptionCount = attributes.size();
+        vertexInputInfo.pVertexAttributeDescriptions = attributes.data();
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -72,6 +76,14 @@ namespace components
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment.blendEnable = VK_FALSE;
 
+        VkPipelineDepthStencilStateCreateInfo depthStencil{};
+        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencil.depthTestEnable = VK_TRUE;
+        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencil.depthBoundsTestEnable = VK_FALSE;
+        depthStencil.stencilTestEnable = VK_FALSE;
+
         VkPipelineColorBlendStateCreateInfo colorBlending{};
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         colorBlending.logicOpEnable = VK_FALSE;
@@ -92,15 +104,6 @@ namespace components
         dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         dynamicState.pDynamicStates = dynamicStates.data();
 
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 0;
-        pipelineLayoutInfo.pushConstantRangeCount = 0;
-
-        if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &mPipelineLayout) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create pipeline layout!");
-        }
-
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;
@@ -112,6 +115,7 @@ namespace components
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicState;
+        pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.layout = mPipelineLayout;
         pipelineInfo.renderPass = mRenderPass.GetRenderPass();
         pipelineInfo.subpass = 0;
@@ -146,16 +150,17 @@ namespace components
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[0].offset = offsetof(components::Vertex, pos);
-        //inUV0
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(components::Vertex, uv0);
-        //inColor
+        //inNormal
         attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].location = 1;
         attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[2].offset = offsetof(components::Vertex, normal);
+        //inUV0
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 2;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[1].offset = offsetof(components::Vertex, uv0);
+
         return attributeDescriptions;
     }
 
@@ -176,7 +181,7 @@ namespace components
         cameraUniformBinding.binding = 0; // Matches binding 0 in the shader
         cameraUniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         cameraUniformBinding.descriptorCount = 1;
-        cameraUniformBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        cameraUniformBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         cameraUniformBinding.pImmutableSamplers = nullptr; // Not used
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -253,12 +258,14 @@ namespace components
     void SolidPhongPipeline::CreatePipelineLayout()
     {
         const auto device = vk::Device::gDevice->GetDevice();
-
+        std::vector<VkDescriptorSetLayout> layouts{
+            mDescriptorSetLayout
+        };
         ////Create the pipeline layout////
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1; // One descriptor set layout
-        pipelineLayoutInfo.pSetLayouts = &mDescriptorSetLayout; // The layout created earlier
+        pipelineLayoutInfo.setLayoutCount = layouts.size(); // One descriptor set layout
+        pipelineLayoutInfo.pSetLayouts = layouts.data(); // The layout created earlier
         pipelineLayoutInfo.pushConstantRangeCount = 0;
         pipelineLayoutInfo.pPushConstantRanges = nullptr;
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, 
