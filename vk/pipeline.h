@@ -1,6 +1,9 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "utils/hash.h"
+namespace components {
+    class Renderable;
+}
 namespace vk
 {
     class RenderPass;
@@ -10,7 +13,7 @@ namespace vk
     public:
         virtual void Set(uint32_t currentFrame, 
             const Pipeline& pipeline,
-            VkCommandBuffer cmdBuffer) const = 0;
+            VkCommandBuffer cmdBuffer) = 0;
     };
     class Pipeline
     {
@@ -21,11 +24,12 @@ namespace vk
         /// ALl objects that exist in the base class are destroyed by it.
         /// </summary>
         virtual ~Pipeline();
-        void SetUniform(const Uniform* const uniform, uint32_t currentFrame, VkCommandBuffer cmdBuffer) {
+        void SetUniform(Uniform* uniform, uint32_t currentFrame, VkCommandBuffer cmdBuffer) {
             uniform->Set(currentFrame, *this, cmdBuffer);
         }
         const hash_t mHash;
         const std::string mName;
+        virtual void Draw(components::Renderable& r, VkCommandBuffer cmdBuffer);
     protected:
         const RenderPass& mRenderPass;
         VkPipeline mPipeline = VK_NULL_HANDLE;

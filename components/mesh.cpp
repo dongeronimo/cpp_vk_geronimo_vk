@@ -29,6 +29,14 @@ namespace components {
         std::vector<uint16_t> indices = md.indices;
         CopyDataToGlobalBuffer(vertices, indices);
     }
+    void Mesh::Bind(VkCommandBuffer cmd)const
+    {
+        assert(mIndexesOffset != LLONG_MAX);
+        assert(mVertexesOffset != LLONG_MAX);
+        vkCmdBindVertexBuffers(cmd, 0, 1, &gMeshBuffer, &mVertexesOffset);
+        vkCmdBindIndexBuffer(cmd, gMeshBuffer, mIndexesOffset, VK_INDEX_TYPE_UINT16);
+
+    }
     Mesh::~Mesh() {
         meshCounter--;
         //all meshes are gone, destroy the global buffer

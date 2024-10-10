@@ -275,7 +275,7 @@ namespace components
 
     }
 
-    void CameraUniform::Set(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer) const
+    void CameraUniform::Set(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer) 
     {
         //get my pipeline
         const SolidPhongPipeline& phong = dynamic_cast<const SolidPhongPipeline&>(pipeline);
@@ -365,17 +365,14 @@ namespace components
 //    const auto dp_name = Concatenate(mName, "DescriptorPool");
 //    SET_NAME(mDescriptorPool, VK_OBJECT_TYPE_DESCRIPTOR_POOL, dp_name.c_str());
 //    CreateDescriptorSets();
-//    //TODO: Create the pipeline layout
-//    //TODO: Create the pipeline
 //}
 //
 //components::SolidPhongPipeline::~SolidPhongPipeline()
 //{
-//    //TODO: Destroy my objects
 //}
 //void components::SolidPhongPipeline::Bind()
 //{
-//    //TODO: Do the bind
+
 //}
 //void components::SolidPhongPipeline::CreateDescriptorSets()
 //{

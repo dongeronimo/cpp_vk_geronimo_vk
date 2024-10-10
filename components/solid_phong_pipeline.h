@@ -14,9 +14,10 @@ namespace components
     class CameraUniform : public vk::Uniform {
     public:
         CameraUniformBuffer mCameraData;
-        void Set(uint32_t currentFrame, 
+        virtual void Set(uint32_t currentFrame, 
             const vk::Pipeline& pipeline,
-            VkCommandBuffer cmdBuffer) const override;
+            VkCommandBuffer cmdBuffer) override;
+        virtual ~CameraUniform() = default;
     };
 
     class SolidPhongPipeline : public vk::Pipeline {

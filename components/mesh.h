@@ -16,7 +16,11 @@ namespace components
     class Mesh {
     public:
         Mesh(io::MeshData& md);
+        void Bind(VkCommandBuffer cmd)const;
         ~Mesh();
+        VkDeviceSize mVertexesOffset;
+        VkDeviceSize mIndexesOffset;
+        uint16_t mNumberOfIndices;
     private:
         void InitGlobalMeshBufferIfNotInitialized();
         void CopyDataToGlobalBuffer(
@@ -27,8 +31,6 @@ namespace components
         /// ass buffer, and the offsets give me the location of this mesh in that
         /// big ass buffer.
         /// </summary>
-        VkDeviceSize mVertexesOffset;
-        VkDeviceSize mIndexesOffset;
-        uint16_t mNumberOfIndices;
+
     };
 }

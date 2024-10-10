@@ -6,6 +6,8 @@
 #include "io/asset-paths.h"
 #include "utils/concatenate.h"
 #include "debug_utils.h"
+#include "components/renderable.h"
+#include "components/mesh.h"
 
 vk::Pipeline::Pipeline(const std::string name, const RenderPass& rp):
     mName(name), mHash(utils::Hash(name)), mRenderPass(rp)
@@ -46,4 +48,18 @@ vk::Pipeline::~Pipeline()
     vkDestroyPipelineLayout(d, mPipelineLayout, nullptr);
     vkDestroyDescriptorSetLayout(d, mDescriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(d, mDescriptorPool, nullptr);
+}
+
+void vk::Pipeline::Draw(components::Renderable& r, VkCommandBuffer cmdBuffer)
+{
+    //I assume that all descriptor sets were bind using Uniform::Set.
+    vk::SetMark({ 1.0f, 0.8f, 1.0f, 1.0f }, mName, cmdBuffer);
+    r.mMesh.Bind(cmdBuffer);
+    vkCmdDrawIndexed(cmdBuffer,
+        r.mMesh.mNumberOfIndices,
+        1,
+        0,
+        0,
+        0);
+    vk::EndMark(cmdBuffer);
 }
