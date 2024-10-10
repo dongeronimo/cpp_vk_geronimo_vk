@@ -8,6 +8,14 @@
 #include "vk/depth_buffer.h"
 namespace components
 {
+    void MainRenderPass::Recreate()
+    {
+        mSwapChain->Recreate();
+        mColorFormat = mSwapChain->GetFormat();
+        mDepthBuffer = std::make_shared<vk::DepthBuffer>(mSwapChain->GetExtent().width, mSwapChain->GetExtent().height);
+        mDepthFormat = mDepthBuffer->GetFormat();
+        RecreateRenderPass();
+    }
     MainRenderPass::MainRenderPass()
         :vk::RenderPass("mainRenderPass", {1.0f, 0.3f, 0.6f, 1.0f})
     {
@@ -20,6 +28,45 @@ namespace components
         //create the depth image
         mDepthBuffer = std::make_shared<vk::DepthBuffer>(mSwapChain->GetExtent().width, mSwapChain->GetExtent().height);
         mDepthFormat = mDepthBuffer->GetFormat();
+        RecreateRenderPass();
+    }
+    MainRenderPass::~MainRenderPass()
+    {
+        for (auto& f : mFramebuffers) {
+            vkDestroyFramebuffer(vk::Device::gDevice->GetDevice(), f, nullptr);
+        }
+        mSwapChain.reset();
+    }
+    void MainRenderPass::SetClearColor(std::array<float, 4> color)
+    {
+        mClearValues[0].color = { {color[0], color[1], color[2], color[3]}};
+        mClearValues[1].depthStencil = { 1.0f, 0 };
+
+    }
+    void MainRenderPass::DestroyFramebuffers()
+    {
+        for (auto& f : mFramebuffers) {
+            vkDestroyFramebuffer(vk::Device::gDevice->GetDevice(),
+                f, nullptr);
+        }
+    }
+    void MainRenderPass::DestroyRenderPass()
+    {
+        vkDestroyRenderPass(vk::Device::gDevice->GetDevice(),
+            mRenderPass, nullptr);
+    }
+    void MainRenderPass::DestroyDepthBuffers()
+    {
+        mDepthBuffer.reset();
+        assert(mDepthBuffer.use_count() == 0);
+    }
+
+    VkFramebuffer MainRenderPass::GetFramebuffer(uint32_t imageIndex)
+    {
+        return mFramebuffers[imageIndex];
+    }
+    void MainRenderPass::RecreateRenderPass()
+    {
         ///create the render pass
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = mDepthFormat;
@@ -80,7 +127,7 @@ namespace components
             throw std::runtime_error("failed to create render pass!");
         }
         SET_NAME(mRenderPass, VK_OBJECT_TYPE_RENDER_PASS, mName.c_str());
-        
+
         //Create the framebuffer for color and depth, color coming from the swapchain
         mExtent = mSwapChain->GetExtent();
         const auto colorAttachments = mSwapChain->GetImageViews();
@@ -108,22 +155,5 @@ namespace components
             auto _name = Concatenate(mName, "Framebuffer ", i);
             SET_NAME(mFramebuffers[i], VK_OBJECT_TYPE_FRAMEBUFFER, _name.c_str());
         }
-    }
-    MainRenderPass::~MainRenderPass()
-    {
-        for (auto& f : mFramebuffers) {
-            vkDestroyFramebuffer(vk::Device::gDevice->GetDevice(), f, nullptr);
-        }
-        mSwapChain.reset();
-    }
-    void MainRenderPass::SetClearColor(std::array<float, 4> color)
-    {
-        mClearValues[0].color = { {color[0], color[1], color[2], color[3]}};
-        mClearValues[1].depthStencil = { 1.0f, 0 };
-
-    }
-    VkFramebuffer MainRenderPass::GetFramebuffer(uint32_t imageIndex)
-    {
-        return mFramebuffers[imageIndex];
     }
 }

@@ -35,6 +35,7 @@ namespace app {
         /// </summary>
         std::function<void(Window*)> OnRender;
 
+        std::function<void()> OnResize;
     private:
         GLFWwindow* mWindow = nullptr;
     };

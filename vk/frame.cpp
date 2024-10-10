@@ -45,8 +45,11 @@ namespace vk
             VK_NULL_HANDLE, //no fence cares  
             &mImageIndex);
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            assert(false);
+            OnResize();
             return false;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            throw std::runtime_error("failed to acquire swap chain image!");
         }
         //resets the command buffer
         vkResetCommandBuffer(CommandBuffer(), 0);
@@ -127,14 +130,13 @@ namespace vk
         if (result != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");
         }
-        //TODO resize: resize is not implemented
-        //if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || ctx.framebufferResized) {
-        //    ctx.framebufferResized = false;
-        //    RecreateSwapChain(ctx);
-        //}
-        //else if (result != VK_SUCCESS) {
-        //    throw std::runtime_error("failed to present swap chain image!");
-        //}
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            OnResize();
+        }
+        else if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to present swap chain image!");
+        }
+
     }
     bool Frame::IsDegenerateFramebuffer() const
     {

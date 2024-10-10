@@ -50,6 +50,13 @@ vk::Pipeline::~Pipeline()
     vkDestroyDescriptorPool(d, mDescriptorPool, nullptr);
 }
 
+void vk::Pipeline::DestroyPipeline()
+{
+    auto d = Device::gDevice->GetDevice();
+    vkDestroyPipeline(d, mPipeline, nullptr);
+    //vkDestroyPipelineLayout(d, mPipelineLayout, nullptr);
+}
+
 void vk::Pipeline::Draw(components::Renderable& r, VkCommandBuffer cmdBuffer)
 {
     //I assume that all descriptor sets were bind using Uniform::Set.

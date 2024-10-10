@@ -21,6 +21,9 @@ namespace vk
         VkImageView GetImageView(uint32_t which)const { return mSwapChainImageViews[which]; }
         std::vector<VkImageView> GetImageViews()const { return mSwapChainImageViews; }
         VkFormat GetFormat()const { return mImageFormat; }
+        void DestroySwapChain();
+        void DestroyImageViews();
+        void Recreate();
     private:
         VkExtent2D mSwapChainExtent;
         VkSwapchainKHR mSwapChain = VK_NULL_HANDLE;

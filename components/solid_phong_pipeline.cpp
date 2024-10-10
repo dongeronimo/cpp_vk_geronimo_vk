@@ -10,19 +10,9 @@
 #include "mesh.h"
 namespace components
 {
-    SolidPhongPipeline::SolidPhongPipeline(const vk::RenderPass& rp)
-        :vk::Pipeline("SolidPhongPipeline", rp)
+    void SolidPhongPipeline::Recreate()
     {
         const auto device = vk::Device::gDevice->GetDevice();
-        CreateDescriptorSetLayout();
-        CreateDescriptorPool();
-        CreateCameraBuffer();
-        CreateDescriptorSet();
-        CreatePipelineLayout();
-        //assert(mPipelineLayout != VK_NULL_HANDLE);
-        ////Load the shaders////
-        mVertexShader = vk::LoadShaderModule(device, "phong.vert.spv");
-        mFragmentShader = vk::LoadShaderModule(device, "phong.frag.spv");
         ////Create the pipeline////
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -55,13 +45,13 @@ namespace components
         VkViewport viewport = {};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = static_cast<float>(rp.GetExtent().width);
-        viewport.height = static_cast<float>(rp.GetExtent().height);
+        viewport.width = static_cast<float>(mRenderPass.GetExtent().width);
+        viewport.height = static_cast<float>(mRenderPass.GetExtent().height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         VkRect2D scissor = {};
         scissor.offset = { 0, 0 };
-        scissor.extent = rp.GetExtent();
+        scissor.extent = mRenderPass.GetExtent();
 
         VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -137,8 +127,20 @@ namespace components
         if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mPipeline) != VK_SUCCESS) {
             throw std::runtime_error("failed to create graphics pipeline!");
         }
-
-
+    }
+    SolidPhongPipeline::SolidPhongPipeline(const vk::RenderPass& rp)
+        :vk::Pipeline("SolidPhongPipeline", rp)
+    {
+        const auto device = vk::Device::gDevice->GetDevice();
+        CreateDescriptorSetLayout();
+        CreateDescriptorPool();
+        CreateCameraBuffer();
+        CreateDescriptorSet();
+        CreatePipelineLayout();
+        ////Load the shaders////
+        mVertexShader = vk::LoadShaderModule(device, "phong.vert.spv");
+        mFragmentShader = vk::LoadShaderModule(device, "phong.frag.spv");
+        Recreate();
     }
 
     SolidPhongPipeline::~SolidPhongPipeline()
@@ -158,6 +160,8 @@ namespace components
     {
         Pipeline::Bind(buffer, currentFrame);
     }
+
+
 
     std::vector<VkVertexInputAttributeDescription> SolidPhongPipeline::AttributeDescription()
     {

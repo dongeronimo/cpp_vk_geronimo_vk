@@ -12,6 +12,7 @@
 #include "components/mesh.h"
 #include "components/camera.h"
 #include "components/renderable.h"
+#include "vk/swap_chain.h"
 int main(int argc, char** argv)
 {
 	app::Window window(SCREEN_WIDTH, SCREEN_HEIGH);
@@ -39,16 +40,43 @@ int main(int argc, char** argv)
 	camera->mZFar = 100.0f;
 	camera->mPosition = { 3, 7,11};
 	camera->LookTo({ 0,0,0 });
-	/////////////Create the renderable
+	/////////////Create the game objects
 	components::Renderable* myBox = new components::Renderable("MyBox", *boxMesh);
-
+	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
+	////////////On Resize
+	std::function<void()> OnResize = [&device, &mainRenderPass, &commandBuffers, &phongPipeline, &camera, &window]() {
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(window.GetWindow(), &width, &height);
+		while (width == 0 || height == 0) {
+			//it's minimized, lets wait for glfw events.
+			glfwGetFramebufferSize(window.GetWindow(), &width, &height);
+			glfwWaitEvents();
+		}
+		//wait for the device to stop doing all tasks
+		vkDeviceWaitIdle(device.GetDevice());
+		//destroy the structures affected by resize
+		mainRenderPass.DestroyFramebuffers();
+		vkFreeCommandBuffers(device.GetDevice(),
+			device.GetCommandPool(), commandBuffers.size(), commandBuffers.data());
+		phongPipeline->DestroyPipeline();
+		mainRenderPass.DestroyRenderPass();
+		mainRenderPass.GetSwapChain()->DestroyImageViews();
+		mainRenderPass.GetSwapChain()->DestroySwapChain();
+		//recreate them
+		mainRenderPass.Recreate();
+		phongPipeline->Recreate();
+		camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
+		commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
+		};
+	////////////OnRender
 	window.OnRender = [&currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass, 
-		&phongPipeline, &syncService, &camera, &myBox]
+		&phongPipeline, &syncService, &camera, &myBox, &OnResize]
 	(app::Window* wnd) {
 		//TODO vulkan: do the rendering loop
 		//begin the frame
 		vk::Frame frame(commandBuffers,currentFrameId, syncService, *mainRenderPass.GetSwapChain());
+		frame.OnResize = OnResize;
 		frame.BeginFrame();
 		//TODO Shadow: activate the render passes
 		//shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
@@ -70,6 +98,7 @@ int main(int argc, char** argv)
 		frame.EndFrame();
 		currentFrameId = (currentFrameId + 1)%MAX_FRAMES_IN_FLIGHT;
 	};
+	window.OnResize = OnResize;
 	window.MainLoop();
 	//beginning shutdown
 	syncService.WaitDeviceIdle();

@@ -62,7 +62,7 @@ VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avai
     return presentMode;
 }
 namespace vk {
-    SwapChain::SwapChain()
+    void SwapChain::Recreate()
     {
         assert(vk::Instance::gInstance != nullptr);
         assert(vk::Device::gDevice != nullptr);
@@ -76,7 +76,7 @@ namespace vk {
             mSwapChainExtent = supportDetails.capabilities.currentExtent;
         }
         else {
-            mSwapChainExtent = { SCREEN_WIDTH, SCREEN_WIDTH};
+            mSwapChainExtent = { SCREEN_WIDTH, SCREEN_WIDTH };
             mSwapChainExtent.width = std::max(supportDetails.capabilities.minImageExtent.width,
                 std::min(supportDetails.capabilities.maxImageExtent.width, mSwapChainExtent.width));
             mSwapChainExtent.height = std::max(supportDetails.capabilities.minImageExtent.height,
@@ -159,6 +159,10 @@ namespace vk {
             SET_NAME(mSwapChainImageViews[i], VK_OBJECT_TYPE_IMAGE_VIEW, name2.c_str());
         }
     }
+    SwapChain::SwapChain()
+    {
+        Recreate();
+    }
     SwapChain::~SwapChain()
     {
         vkDestroySwapchainKHR(Device::gDevice->GetDevice(), mSwapChain, nullptr);
@@ -166,4 +170,15 @@ namespace vk {
             vkDestroyImageView(Device::gDevice->GetDevice(), iv, nullptr);
         }
     }
+    void SwapChain::DestroySwapChain()
+    {
+        vkDestroySwapchainKHR(Device::gDevice->GetDevice(), mSwapChain, nullptr);
+    }
+    void SwapChain::DestroyImageViews()
+    {
+        for (auto imageView : mSwapChainImageViews) {
+            vkDestroyImageView(Device::gDevice->GetDevice(), imageView, nullptr);
+        }
+    }
+
 }

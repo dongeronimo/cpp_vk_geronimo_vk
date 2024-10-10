@@ -26,6 +26,7 @@ namespace components
         ~SolidPhongPipeline();
         void Bind(VkCommandBuffer buffer, uint32_t currentFrame) override;
         friend class CameraUniform;
+        void Recreate();
     private:
         std::vector<VkVertexInputAttributeDescription> AttributeDescription();
         VkVertexInputBindingDescription BindingDescription();

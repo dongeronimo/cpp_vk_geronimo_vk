@@ -24,7 +24,10 @@ namespace components {
 			return mFramebuffers.size();
 		}
 		std::shared_ptr<vk::SwapChain> GetSwapChain()const { return mSwapChain; }
-
+		void DestroyFramebuffers();
+		void DestroyRenderPass();
+		void DestroyDepthBuffers();
+		void Recreate();
 	private:
 		/// <summary>
 		/// The swap chain.
@@ -36,5 +39,6 @@ namespace components {
 		VkFormat mColorFormat;
 		VkFormat mDepthFormat;
 		std::shared_ptr<vk::DepthBuffer> mDepthBuffer;
+		void RecreateRenderPass();
 	};
 }

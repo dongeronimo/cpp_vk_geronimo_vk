@@ -4,7 +4,12 @@
 /// I need this global variable here bc glfwSetCursorPosCallback does not accept lamba scope capture.
 /// </summary>
 glm::vec2 gMousePosition;
-
+app::Window* gWindow = nullptr;
+void framebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+    assert(gWindow);
+    gWindow->OnResize();
+}
 namespace app {
     app::Window::Window(uint32_t w, uint32_t h)
     {
@@ -21,6 +26,8 @@ namespace app {
         glfwSetMouseButtonCallback(mWindow, [](GLFWwindow* window, int button, int action, int mods) {
             //TODO input: do something with the mouse
         });
+        gWindow = this;
+        glfwSetFramebufferSizeCallback(mWindow, framebufferResizeCallback);
     }
 
     app::Window::~Window()

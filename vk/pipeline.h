@@ -29,6 +29,15 @@ namespace vk
         }
         const hash_t mHash;
         const std::string mName;
+        /// <summary>
+        /// Called when we do resize. Some pipelines need to be recreated when we resize the surface
+        /// </summary>
+        virtual void DestroyPipeline();
+        /// <summary>
+        /// Draw the renderable using the pipeline
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="cmdBuffer"></param>
         virtual void Draw(components::Renderable& r, VkCommandBuffer cmdBuffer);
     protected:
         const RenderPass& mRenderPass;

@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include "data_structures/ring_buffer.h"
+#include <functional>
 namespace vk {
     class SyncronizationService;
     class SwapChain;
@@ -22,6 +23,7 @@ namespace vk
         const size_t mCurrentFrame;
         VkCommandBuffer CommandBuffer();
         void EndFrame();
+        std::function<void()> OnResize;
     private:
         const ring_buffer_t<VkCommandBuffer>& commandBuffers;
         vk::SyncronizationService& mSyncService;
