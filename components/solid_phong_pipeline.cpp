@@ -125,11 +125,15 @@ namespace components
             throw std::runtime_error("failed to create graphics pipeline!");
         }
 
+
     }
 
     SolidPhongPipeline::~SolidPhongPipeline()
     {
         const auto device = vk::Device::gDevice->GetDevice();
+        vkDestroyShaderModule(device, mVertexShader, nullptr);
+        vkDestroyShaderModule(device, mFragmentShader, nullptr);
+        vkDestroyDescriptorPool(device, mDescriptorPool, nullptr);
         for (auto& m : mCameraBuffer) {
             vkDestroyBuffer(device, m, nullptr);
         }
@@ -190,6 +194,8 @@ namespace components
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &mDescriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor set layout!");
         }
+        auto n = Concatenate(mName, "DescriptorSetLayout");
+        SET_NAME(mDescriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n.c_str());
         assert(mDescriptorSetLayout != VK_NULL_HANDLE);
     }
 
@@ -208,6 +214,8 @@ namespace components
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor pool!");
         }
+        auto n = Concatenate(mName, "DescriptorPool");
+        SET_NAME(mDescriptorPool, VK_OBJECT_TYPE_DESCRIPTOR_POOL, n.c_str());
     }
 
     void SolidPhongPipeline::CreateCameraBuffer()

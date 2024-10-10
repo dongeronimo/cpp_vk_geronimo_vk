@@ -115,6 +115,9 @@ VkFramebuffer components::ShadowMapRenderPass::GetFramebuffer(uint32_t imageInde
 components::ShadowMapRenderPass::~ShadowMapRenderPass()
 {
 	const auto dev = vk::Device::gDevice->GetDevice();
+	for (auto& f : mFramebuffers) {
+		vkDestroyFramebuffer(dev, f, nullptr);
+	}
 	for (auto& i : mBuffers) {
 		delete i;
 	}

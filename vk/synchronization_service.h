@@ -6,6 +6,7 @@ namespace vk
     class SyncronizationService
     {
     public:
+        void WaitDeviceIdle();
         SyncronizationService();
         ~SyncronizationService();
         VkSemaphore& ImagesAvailableSemaphore(uint32_t i);

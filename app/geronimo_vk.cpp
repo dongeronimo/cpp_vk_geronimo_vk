@@ -71,5 +71,11 @@ int main(int argc, char** argv)
 		currentFrameId = (currentFrameId + 1)%MAX_FRAMES_IN_FLIGHT;
 	};
 	window.MainLoop();
+	//beginning shutdown
+	syncService.WaitDeviceIdle();
+	delete myBox;
+	delete boxMesh;
+	delete camera;
+	delete phongPipeline;
 	return 0;
 }

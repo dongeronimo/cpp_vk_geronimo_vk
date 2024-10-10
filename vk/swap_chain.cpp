@@ -162,5 +162,8 @@ namespace vk {
     SwapChain::~SwapChain()
     {
         vkDestroySwapchainKHR(Device::gDevice->GetDevice(), mSwapChain, nullptr);
+        for (auto& iv : mSwapChainImageViews) {
+            vkDestroyImageView(Device::gDevice->GetDevice(), iv, nullptr);
+        }
     }
 }

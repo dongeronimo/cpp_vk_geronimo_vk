@@ -4,6 +4,11 @@
 #include "vk\debug_utils.h"
 namespace vk
 {
+    void SyncronizationService::WaitDeviceIdle()
+    {
+        auto _dev = Device::gDevice->GetDevice();
+        vkDeviceWaitIdle(_dev);
+    }
     SyncronizationService::SyncronizationService()
     {
         mImagesAvailableSemaphore.resize(MAX_FRAMES_IN_FLIGHT);

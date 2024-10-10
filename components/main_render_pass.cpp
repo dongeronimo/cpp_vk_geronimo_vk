@@ -114,6 +114,7 @@ namespace components
         for (auto& f : mFramebuffers) {
             vkDestroyFramebuffer(vk::Device::gDevice->GetDevice(), f, nullptr);
         }
+        mSwapChain.reset();
     }
     void MainRenderPass::SetClearColor(std::array<float, 4> color)
     {
