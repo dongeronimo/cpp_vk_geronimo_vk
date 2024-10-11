@@ -46,7 +46,9 @@ vk::Pipeline::~Pipeline()
     auto d = Device::gDevice->GetDevice();
     vkDestroyPipeline(d, mPipeline, nullptr);
     vkDestroyPipelineLayout(d, mPipelineLayout, nullptr);
-    vkDestroyDescriptorSetLayout(d, mDescriptorSetLayout, nullptr);
+    for (auto& dsl : mDescriptorSetLayouts) {
+        vkDestroyDescriptorSetLayout(d, dsl, nullptr);
+    }
     vkDestroyDescriptorPool(d, mDescriptorPool, nullptr);
 }
 

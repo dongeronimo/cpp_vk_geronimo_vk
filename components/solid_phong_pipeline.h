@@ -45,7 +45,7 @@ namespace components
         
         ring_buffer_t<VkBuffer> mCameraBuffer;
         ring_buffer_t<VkDeviceMemory> mCameraBufferMemory;
-        ring_buffer_t<VkDescriptorSet> mDescriptorSet;
+        ring_buffer_t<VkDescriptorSet> mCameraDescriptorSet;
 
         ring_buffer_t<VkBuffer> mModelBuffer;
         ring_buffer_t<VkDeviceMemory> mModelBufferMemory;

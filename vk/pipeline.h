@@ -1,6 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "utils/hash.h"
+#include <vector>
 namespace components {
     class Renderable;
 }
@@ -43,7 +44,7 @@ namespace vk
         const RenderPass& mRenderPass;
         VkPipeline mPipeline = VK_NULL_HANDLE;
         VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
-        VkDescriptorSetLayout mDescriptorSetLayout = VK_NULL_HANDLE;
+        std::vector< VkDescriptorSetLayout> mDescriptorSetLayouts;
         VkDescriptorPool mDescriptorPool = VK_NULL_HANDLE;
     };
 }

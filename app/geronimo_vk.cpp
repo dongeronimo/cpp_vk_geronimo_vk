@@ -42,6 +42,8 @@ int main(int argc, char** argv)
 	camera->LookTo({ 0,0,0 });
 	/////////////Create the game objects
 	components::Renderable* myBox = new components::Renderable("MyBox", *boxMesh);
+	myBox->mPosition = { 0,0,0 };
+	myBox->LookTo({ 1,1,0 });
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize
@@ -88,8 +90,9 @@ int main(int argc, char** argv)
 		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		//activate pipelines that use the render pass
 		phongPipeline->Bind(frame.CommandBuffer(), currentFrameId);
-		//Apply camera
+
 		camera->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
+		myBox->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
 		//TODO vulkan: draw meshes
 		phongPipeline->Draw(*myBox, frame.CommandBuffer());
 		//end the render pass
