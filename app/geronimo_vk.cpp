@@ -38,12 +38,16 @@ int main(int argc, char** argv)
 	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 	camera->mZNear = 0.1f;
 	camera->mZFar = 100.0f;
-	camera->mPosition = { 3, 7,11};
+	camera->mPosition = { 10, 5,0};
 	camera->LookTo({ 0,0,0 });
 	/////////////Create the game objects
 	components::Renderable* myBox = new components::Renderable("MyBox", *boxMesh);
 	myBox->mPosition = { 0,0,0 };
 	myBox->LookTo({ 1,1,0 });
+
+	components::Renderable* myBox2 = new components::Renderable("MyBox2", *boxMesh);
+	myBox2->mPosition = { 5,0,0 };
+	myBox2->LookTo({ 1,0,0 });
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize
@@ -73,7 +77,7 @@ int main(int argc, char** argv)
 		};
 	////////////OnRender
 	window.OnRender = [&currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass, 
-		&phongPipeline, &syncService, &camera, &myBox, &OnResize]
+		&phongPipeline, &syncService, &camera, &myBox,&myBox2, &OnResize]
 	(app::Window* wnd) {
 		//TODO vulkan: do the rendering loop
 		//begin the frame
@@ -93,8 +97,12 @@ int main(int argc, char** argv)
 
 		camera->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
 		myBox->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
-		//TODO vulkan: draw meshes
 		phongPipeline->Draw(*myBox, frame.CommandBuffer());
+		myBox2->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
+		phongPipeline->Draw(*myBox2, frame.CommandBuffer());
+		//TODO vulkan: draw meshes
+
+		
 		//end the render pass
 		mainRenderPass.EndRenderPass(frame.CommandBuffer());
 		//end the frame

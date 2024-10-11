@@ -4,7 +4,7 @@
 #include <glm/gtx/quaternion.hpp>
 namespace components
 {
-    const glm::vec3 V_UP = { 0,0,1 };
+    const glm::vec3 V_UP = { 0,1,0 };
     static uint32_t gTransformCounter = 0;
     class Transform
     {

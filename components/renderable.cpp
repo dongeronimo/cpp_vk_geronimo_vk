@@ -1,12 +1,14 @@
 #include "renderable.h"
 #include <array>
 #include <stdexcept>
-std::vector<uint32_t> gAvailableModelIDs(MAX_NUMBER_OF_OBJS, true);
+enum MODEL_ID_STATE {model_id_free, model_id_used};
+
+std::vector<MODEL_ID_STATE> gAvailableModelIDs(MAX_NUMBER_OF_OBJS, model_id_free);
 
 uint32_t GetAvailableModelId() {
     for (uint32_t i = 0; i < gAvailableModelIDs.size(); i++) {
-        if (gAvailableModelIDs[i] == true);
-        return i;
+        if (gAvailableModelIDs[i] == model_id_free)
+            return i;
     }
     throw std::runtime_error("no id available for model");
 }
@@ -17,12 +19,12 @@ namespace components {
         components::ModelMatrixUniform(GetAvailableModelId())
     {
         //take the position
-        gAvailableModelIDs[mModelId] = true;
+        gAvailableModelIDs[mModelId] = model_id_used;
     }
     Renderable::~Renderable()
     {
         //release the position
-        gAvailableModelIDs[mModelId] = false;
+        gAvailableModelIDs[mModelId] = model_id_free;
     }
     void Renderable::Set(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer)
     {
