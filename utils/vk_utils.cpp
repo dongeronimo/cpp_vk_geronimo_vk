@@ -41,6 +41,16 @@ VkFormat utils::FindDepthFormat(VkPhysicalDevice physicalDevice)
     );
 }
 
+void utils::CreateAlignedBuffer(VkDeviceSize size, 
+    uint32_t amount,
+    VkBufferUsageFlags usage, 
+    VkMemoryPropertyFlags memoryProperties, 
+    VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+    VkDeviceSize finalSize = AlignedSize(size, amount, vk::Instance::gInstance->GetPhysicalDevice());
+    CreateBuffer(finalSize, usage, memoryProperties, buffer, bufferMemory);
+}
+
 void utils::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
     assert(size != 0);//size must not be zero

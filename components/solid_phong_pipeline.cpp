@@ -135,6 +135,7 @@ namespace components
         CreateDescriptorSetLayout();
         CreateDescriptorPool();
         CreateCameraBuffer();
+        CreateModelBuffer();
         CreateDescriptorSet();
         CreatePipelineLayout();
         ////Load the shaders////
@@ -197,17 +198,24 @@ namespace components
     void SolidPhongPipeline::CreateDescriptorSetLayout()
     {
         const auto device = vk::Device::gDevice->GetDevice();
-        /////create the descriptor set layout for camera/////
-        VkDescriptorSetLayoutBinding cameraUniformBinding{};
-        cameraUniformBinding.binding = 0; // Matches binding 0 in the shader
-        cameraUniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        cameraUniformBinding.descriptorCount = 1;
-        cameraUniformBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        cameraUniformBinding.pImmutableSamplers = nullptr; // Not used
+        std::array< VkDescriptorSetLayoutBinding, 2> bindings;
+        //camera - uniform buffer
+        bindings[0].binding = 0; // Matches binding 0 in the shader
+        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bindings[0].descriptorCount = 1;
+        bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        bindings[0].pImmutableSamplers = nullptr; // Not used
+        //model - dynamic uniform buffer
+        bindings[1].binding = 1; // Matches binding 0 in the shader
+        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        bindings[1].descriptorCount = 1;
+        bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        bindings[1].pImmutableSamplers = nullptr; // Not used
+
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = 1; // Only one binding, for the Camera uniform buffer
-        layoutInfo.pBindings = &cameraUniformBinding;
+        layoutInfo.bindingCount = bindings.size(); // Only one binding, for the Camera uniform buffer
+        layoutInfo.pBindings = bindings.data();
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &mDescriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor set layout!");
         }
@@ -219,15 +227,21 @@ namespace components
     void SolidPhongPipeline::CreateDescriptorPool()
     {
         const auto device = vk::Device::gDevice->GetDevice();
+        std::array<VkDescriptorPoolSize, 2> poolSizes;
+        // Camera - uniform buffer, one per frame
+        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+
+        // Model - dynamic buffer, one per frame
+        poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        poolSizes[1].descriptorCount = MAX_FRAMES_IN_FLIGHT; // Adjust this for the number of models
+
         /////Create the descriptor pool/////
-        VkDescriptorPoolSize poolSize{};
-        poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT; // One per frame
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = 1;
-        poolInfo.pPoolSizes = &poolSize;
-        poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT; // One descriptor set per frame
+        poolInfo.poolSizeCount = poolSizes.size();
+        poolInfo.pPoolSizes = poolSizes.data();
+        poolInfo.maxSets = 2 * MAX_FRAMES_IN_FLIGHT; // 2 descriptor sets per frame
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor pool!");
         }
@@ -257,26 +271,44 @@ namespace components
         allocInfo.descriptorPool = mDescriptorPool;
         allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
         allocInfo.pSetLayouts = layouts.data();
-        if (vkAllocateDescriptorSets(device, &allocInfo, mCameraDescriptorSet.data()) != VK_SUCCESS) {
+        if (vkAllocateDescriptorSets(device, &allocInfo, 
+            mDescriptorSet.data()) != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate descriptor sets!");
         }
         /////Update the descriptor set/////
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo cameraBufferInfo{};
-            cameraBufferInfo.buffer = mCameraBuffer[i]; // Uniform buffer for this frame
+            cameraBufferInfo.buffer = mCameraBuffer[i];  // Your camera buffer for each frame
             cameraBufferInfo.offset = 0;
-            cameraBufferInfo.range = sizeof(CameraUniformBuffer); // Size of the Camera struct
+            cameraBufferInfo.range = sizeof(CameraUniformBuffer);  // Size of the camera data
 
-            VkWriteDescriptorSet descriptorWrite{};
-            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite.dstSet = mCameraDescriptorSet[i]; // Descriptor set for this frame
-            descriptorWrite.dstBinding = 0; // Matches binding 0 in the shader
-            descriptorWrite.dstArrayElement = 0;
-            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrite.descriptorCount = 1;
-            descriptorWrite.pBufferInfo = &cameraBufferInfo;
+            VkDescriptorBufferInfo modelBufferInfo{};
+            modelBufferInfo.buffer = mModelBuffer[i];  // Your model buffer (dynamic)
+            modelBufferInfo.offset = 0;  // Adjust offset per object/model
+            modelBufferInfo.range = utils::AlignedSize(sizeof(ModelUniformBuffer), 
+                MAX_NUMBER_OF_OBJS, vk::Instance::gInstance->GetPhysicalDevice());  // Size of model data
 
-            vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+            // Camera uniform buffer
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = mDescriptorSet[i];
+            descriptorWrites[0].dstBinding = 0;  // Camera is binding 0
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &cameraBufferInfo;
+
+            // Model dynamic uniform buffer
+            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = mDescriptorSet[i];
+            descriptorWrites[1].dstBinding = 1;  // Model is binding 1
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pBufferInfo = &modelBufferInfo;
+
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     }
 
@@ -300,6 +332,18 @@ namespace components
 
     }
 
+    void SolidPhongPipeline::CreateModelBuffer()
+    {
+        /////Create the model buffer, one for each frame, with size for 1000 objs/////
+        for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            utils::CreateAlignedBuffer(sizeof(CameraUniformBuffer), 
+                MAX_NUMBER_OF_OBJS,
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                mModelBuffer[i], mModelBufferMemory[i]);
+        }
+    }
+
     void CameraUniform::Set(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer) 
     {
         //get my pipeline
@@ -318,7 +362,36 @@ namespace components
             phong.mPipelineLayout, 
             0, //set 0 
             1,
-            &phong.mCameraDescriptorSet[currentFrame], 0, nullptr);
+            &phong.mDescriptorSet[currentFrame], 0, nullptr);
+    }
+
+    void ModelMatrixUniform::Set(uint32_t currentFrame, 
+        const vk::Pipeline& pipeline, 
+        VkCommandBuffer cmdBuffer)
+    {
+        assert(mModelId != UINT32_MAX);
+        static VkPhysicalDevice physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
+        //get my pipeline
+        const SolidPhongPipeline& phong = dynamic_cast<const SolidPhongPipeline&>(pipeline);
+        //map model data and copy to the gpu, mind the offsets and aligned size
+        const auto device = vk::Device::gDevice->GetDevice();
+        void* data;
+        VkDeviceSize alignedSize = utils::AlignedSize(sizeof(ModelUniformBuffer),
+            1, physicalDevice);
+        vkMapMemory(device,
+            phong.mModelBufferMemory[currentFrame],
+            alignedSize * mModelId, //offset
+            alignedSize, //size
+            0, &data);
+        memcpy(data, &mModelData, sizeof(CameraUniformBuffer));
+        vkUnmapMemory(device, phong.mModelBufferMemory[currentFrame]);
+        //bind model descriptor set
+        vkCmdBindDescriptorSets(cmdBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            phong.mPipelineLayout,
+            0, //set 0 
+            1,
+            &phong.mDescriptorSet[currentFrame], 0, nullptr);
     }
 
 }
