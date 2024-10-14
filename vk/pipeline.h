@@ -9,10 +9,12 @@ namespace vk
 {
     class RenderPass;
     class Pipeline;
+    VkDescriptorSetLayout ModelMatrixDescriptorSetLayout();
     VkShaderModule LoadShaderModule(VkDevice device, const std::string& name);
     class Uniform {
     public:
-        virtual void Set(uint32_t currentFrame, 
+        virtual void SetUniform(
+            uint32_t currentFrame, 
             const Pipeline& pipeline,
             VkCommandBuffer cmdBuffer) = 0;
     };
@@ -21,12 +23,15 @@ namespace vk
     public:
         Pipeline(const std::string name, const RenderPass& rp);
         virtual void Bind(VkCommandBuffer buffer, uint32_t currentFrame);
+        void Unbind(VkCommandBuffer buffer);
         /// <summary>
         /// ALl objects that exist in the base class are destroyed by it.
         /// </summary>
         virtual ~Pipeline();
-        void SetUniform(Uniform* uniform, uint32_t currentFrame, VkCommandBuffer cmdBuffer) {
-            uniform->Set(currentFrame, *this, cmdBuffer);
+        void SetUniform(Uniform* uniform, 
+            uint32_t currentFrame, 
+            VkCommandBuffer cmdBuffer) {
+            uniform->SetUniform(currentFrame, *this, cmdBuffer);
         }
         const hash_t mHash;
         const std::string mName;
@@ -46,5 +51,8 @@ namespace vk
         VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
         std::vector< VkDescriptorSetLayout> mDescriptorSetLayouts;
         VkDescriptorPool mDescriptorPool = VK_NULL_HANDLE;
+        std::vector<VkPipelineShaderStageCreateInfo> CreateShaderStage(VkShaderModule vert, VkShaderModule frag);
+        std::vector<VkVertexInputAttributeDescription> DefaultAttributeDescription();
+        VkVertexInputBindingDescription DefaultBindingDescription();
     };
 }

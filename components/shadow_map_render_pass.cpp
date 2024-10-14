@@ -9,12 +9,17 @@
 #include <utils/concatenate.h>
 
 components::ShadowMapRenderPass::ShadowMapRenderPass(uint32_t w, uint32_t h, uint32_t numberOfColorAttachments)
-    :vk::RenderPass("ShadowMapRenderPass", {0.3f, 0.3f, 0.3f, 1.0f}), mWidth(w), mHeight(h), mNumberOfColorAttachments(numberOfColorAttachments)
+    :vk::RenderPass("ShadowMapRenderPass", {0.3f, 0.3f, 0.3f, 1.0f}), 
+	mWidth(w), 
+	mHeight(h), 
+	mNumberOfColorAttachments(numberOfColorAttachments)
 {
 	mFormat = utils::FindDepthFormat(vk::Instance::gInstance->GetPhysicalDevice());
     //Set the clear values
 	mClearValues.resize(1);
 	mClearValues[0] = { 1.0f, 0 };
+	mExtent.width = w;
+	mExtent.height = h;
 	//create the render pass
 	SetRenderPass();
     //create the frame buffer

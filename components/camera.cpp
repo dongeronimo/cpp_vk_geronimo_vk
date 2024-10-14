@@ -15,7 +15,7 @@ namespace components
     {
 
     }
-    void Camera::Set(uint32_t currentFrame,const vk::Pipeline& pipeline,VkCommandBuffer cmdBuffer)
+    void Camera::SetUniform(uint32_t currentFrame,const vk::Pipeline& pipeline,VkCommandBuffer cmdBuffer)
     {
         //update mCameraData
         glm::mat4 projection = glm::perspective(mFOV, mRatio, mZNear, mZFar);
@@ -28,6 +28,6 @@ namespace components
         mCameraData.proj = projection;
         mCameraData.view = view;
         mCameraData.viewPos = mPosition;
-        CameraUniform::Set(currentFrame, pipeline, cmdBuffer);
+        CameraUniform::SetUniform(currentFrame, pipeline, cmdBuffer);
     }
 }

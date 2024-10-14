@@ -13,6 +13,7 @@
 #include "components/camera.h"
 #include "components/renderable.h"
 #include "vk/swap_chain.h"
+
 int main(int argc, char** argv)
 {
 	app::Window window(SCREEN_WIDTH, SCREEN_HEIGH);
@@ -25,7 +26,7 @@ int main(int argc, char** argv)
 	components::ShadowMapRenderPass shadowMapRenderPass(512, 512, mainRenderPass.GetNumberOfSwapChainColorAttachments());
 	//create pipelines
 	components::SolidPhongPipeline* phongPipeline = new components::SolidPhongPipeline(mainRenderPass);
-	//components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline();
+	components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline(shadowMapRenderPass);
 	//create synchronization objects
 	vk::SyncronizationService syncService;
 	///////////////load meshes
@@ -77,32 +78,46 @@ int main(int argc, char** argv)
 		};
 	////////////OnRender
 	window.OnRender = [&currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass, 
-		&phongPipeline, &syncService, &camera, &myBox,&myBox2, &OnResize]
+		&phongPipeline, &syncService, &camera, &myBox,&myBox2, &OnResize, &directionaLightShadowMapPipeline]
 	(app::Window* wnd) {
 		//TODO vulkan: do the rendering loop
 		//begin the frame
 		vk::Frame frame(commandBuffers,currentFrameId, syncService, *mainRenderPass.GetSwapChain());
 		frame.OnResize = OnResize;
 		frame.BeginFrame();
-		//TODO Shadow: activate the render passes
-		//shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
-		////TODO Shadow: activate pipelines that use the render pass
-		//directionaLightShadowMapPipeline->Bind();
+		//Shadow map: activate the render passes
+		shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
+		//Shadow map: activate pipelines that use the render pass
+		directionaLightShadowMapPipeline->Bind(frame.CommandBuffer(), currentFrameId);
+		glm::vec3 lightDirection = { 1,0,0 };
+		glm::vec3 lightPos = -lightDirection * 30.0f; //TODO light: do not use hardcoded distance
+		glm::vec3 lightTarget = { 0,0,0 };//TODO light: calculate the center of the visible objects, based on the frustum
+		glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, {0,0,1});
+		glm::mat4 lightProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.f);//TODO light: calculate based on the objects visible on the frustum
+		glm::mat4 lightMatrix = lightProj * lightView;
+		components::LightSpaceMatrixUniformBuffer lightMatrixObj{ lightMatrix };
+		directionaLightShadowMapPipeline->SetLightMatrix(frame.CommandBuffer(), lightMatrixObj);
 		////TODO Shadow: draw meshes
-		//TODO Shadow: end the render pass
-		//shadowMapRenderPass.EndRenderPass(frame.CommandBuffer());
+		std::vector<components::Renderable*> objectsThatGenerateShadows{ myBox, myBox2 };
+		for (auto& o : objectsThatGenerateShadows) {
+			o->SetUniforms(currentFrameId, *directionaLightShadowMapPipeline, frame.CommandBuffer());
+			directionaLightShadowMapPipeline->Draw(*o, frame.CommandBuffer());
+		}
+		directionaLightShadowMapPipeline->Unbind(frame.CommandBuffer());
+		//Shadow map: end the render pass
+		shadowMapRenderPass.EndRenderPass(frame.CommandBuffer());
+		//main render pass: activate the render pass
 		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		//activate pipelines that use the render pass
 		phongPipeline->Bind(frame.CommandBuffer(), currentFrameId);
 
-		camera->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
-		myBox->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
+		camera->SetUniform(currentFrameId, *phongPipeline, frame.CommandBuffer());
+		//draw meshes
+		myBox->SetUniforms(currentFrameId, *phongPipeline, frame.CommandBuffer());
 		phongPipeline->Draw(*myBox, frame.CommandBuffer());
-		myBox2->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
+		myBox2->SetUniforms(currentFrameId, *phongPipeline, frame.CommandBuffer());
 		phongPipeline->Draw(*myBox2, frame.CommandBuffer());
-		//TODO vulkan: draw meshes
-
-		
+		phongPipeline->Unbind(frame.CommandBuffer());
 		//end the render pass
 		mainRenderPass.EndRenderPass(frame.CommandBuffer());
 		//end the frame
@@ -117,5 +132,6 @@ int main(int argc, char** argv)
 	delete boxMesh;
 	delete camera;
 	delete phongPipeline;
+	delete directionaLightShadowMapPipeline;
 	return 0;
 }

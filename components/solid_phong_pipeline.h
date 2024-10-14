@@ -14,7 +14,7 @@ namespace components
     class CameraUniform : public vk::Uniform {
     public:
         CameraUniformBuffer mCameraData;
-        virtual void Set(uint32_t currentFrame, 
+        virtual void SetUniform(uint32_t currentFrame,
             const vk::Pipeline& pipeline,
             VkCommandBuffer cmdBuffer) override;
         virtual ~CameraUniform() = default;
@@ -25,7 +25,7 @@ namespace components
         ModelMatrixUniform(uint32_t mId):mModelId(mId){}
         const uint32_t mModelId;
         ModelUniformBuffer mModelData;
-        virtual void Set(uint32_t currentFrame,
+        virtual void SetUniform(uint32_t currentFrame,
             const vk::Pipeline& pipeline,
             VkCommandBuffer cmdBuffer) override;
         virtual ~ModelMatrixUniform() = default;
@@ -59,13 +59,6 @@ namespace components
         void CreatePipelineLayout();
         void CreateModelBuffer();
         VkShaderModule mVertexShader, mFragmentShader;
-        //VkRingBuffer<CameraUniformBuffer> mCameraBuffer;
-        /////////////////////OLD        
-        //ring_buffer_t<VkDescriptorSet> mDescriptorSets;
-        //VkRingBuffer<CameraUniformBuffer> mCameraBuffer;
-        //VkRingBuffer<LightSpaceMatrixUniformBuffer> mLightSpaceMatrixBuffer;
-        //VkRingBuffer<LightPositionUniformBuffer> mLightPositionBuffer;
-        //VkDynamicOffsetBuffer<ModelUniformBuffer, MAX_NUMBER_OF_OBJS> mModelUniformBuffer;
-        //VkDynamicOffsetBuffer<MaterialUniformBuffer, MAX_NUMBER_OF_OBJS> mMaterialUniformBuffer;
+
     };
 }

@@ -14,7 +14,7 @@ namespace components
         float mRatio;
         float mZNear;
         float mZFar;
-        void Set(uint32_t currentFrame,
+        void SetUniform(uint32_t currentFrame,
             const vk::Pipeline& pipeline,
             VkCommandBuffer cmdBuffer) override;
 

@@ -5,17 +5,18 @@ layout(location = 2) in vec2 uv0; //not used for now
 
 layout(location = 0) out vec3 fragPosition;
 
-layout(set=0, binding=0) uniform Camera
+layout(set=0, binding=0) uniform Model
+{
+    mat4 mat;
+} model;
+
+layout(set=1, binding=0) uniform Camera
 {
     mat4 view;
     mat4 proj;
     vec3 viewPos;
 } camera;
 
-layout(set=1, binding=0) uniform Model
-{
-    mat4 mat;
-} model;
 
 void main() 
 {

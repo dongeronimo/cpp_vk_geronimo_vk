@@ -37,7 +37,7 @@ namespace vk {
     {
         assert(mRenderPass != VK_NULL_HANDLE);
         assert(mDebugInUse);
-        vk::EndMark(cmdBuffer);
         vkCmdEndRenderPass(cmdBuffer);
+        vk::EndMark(cmdBuffer);
     }
 }
