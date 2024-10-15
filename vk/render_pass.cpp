@@ -15,6 +15,7 @@ namespace vk {
     }
     void RenderPass::BeginRenderPass(VkCommandBuffer cmdBuffer, uint32_t imageIndex, uint32_t frameNumber)
     {
+        mImageIndex = imageIndex;
         assert(mRenderPass != VK_NULL_HANDLE);//did you forget to set this in the ctor?
         assert(mClearValues.size() != 0);//the children have to define that value.
         assert(mExtent.width != 0 && mExtent.height != 0);//the children have to define this too.
@@ -32,6 +33,7 @@ namespace vk {
 
         vk::SetMark({ 0.0f, 0.8f, 4.0f, 1.0f }, mName, cmdBuffer);
         mDebugInUse = true;
+
     }
     void RenderPass::EndRenderPass(VkCommandBuffer cmdBuffer)
     {
@@ -39,5 +41,6 @@ namespace vk {
         assert(mDebugInUse);
         vkCmdEndRenderPass(cmdBuffer);
         vk::EndMark(cmdBuffer);
+        mImageIndex = UINT32_MAX;
     }
 }

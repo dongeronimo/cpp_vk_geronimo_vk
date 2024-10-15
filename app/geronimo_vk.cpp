@@ -89,10 +89,10 @@ int main(int argc, char** argv)
 		shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		//Shadow map: activate pipelines that use the render pass
 		directionaLightShadowMapPipeline->Bind(frame.CommandBuffer(), currentFrameId);
-		glm::vec3 lightDirection = { 1,0,0 };
+		glm::vec3 lightDirection = { 1,0,1 };
 		glm::vec3 lightPos = -lightDirection * 30.0f; //TODO light: do not use hardcoded distance
 		glm::vec3 lightTarget = { 0,0,0 };//TODO light: calculate the center of the visible objects, based on the frustum
-		glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, {0,0,1});
+		glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, {0,1,0});
 		glm::mat4 lightProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.f);//TODO light: calculate based on the objects visible on the frustum
 		glm::mat4 lightMatrix = lightProj * lightView;
 		components::LightSpaceMatrixUniformBuffer lightMatrixObj{ lightMatrix };

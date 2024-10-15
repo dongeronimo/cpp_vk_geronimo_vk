@@ -9,8 +9,11 @@ namespace components {
 	class ShadowMapRenderPass : public vk::RenderPass {
 	public:
 		ShadowMapRenderPass(uint32_t w, uint32_t h, uint32_t numberOfColorAttachments);
+		void EndRenderPass(VkCommandBuffer cmdBuffer) override;
+		void BeginRenderPass(VkCommandBuffer cmdBuffer, uint32_t imageIndex, uint32_t frameNumber)override;
 		~ShadowMapRenderPass();
 	private:
+		bool firstRun = true;
 		std::vector<vk::DepthBuffer*> mBuffers;
 		void SetRenderPass();
 		void SetFramebuffer();

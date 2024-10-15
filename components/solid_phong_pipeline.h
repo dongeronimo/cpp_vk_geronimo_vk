@@ -50,6 +50,8 @@ namespace components
         ring_buffer_t<VkBuffer> mModelBuffer;
         ring_buffer_t<VkDeviceMemory> mModelBufferMemory;
         ring_buffer_t<VkDescriptorSet> mModelDescriptorSet;
+        //TODO shadow: add sampler to sample the shadow data
+        //TODO shadow: update the shader to use the shadow map
 
             
         void CreateDescriptorSetLayout();

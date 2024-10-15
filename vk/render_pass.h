@@ -75,5 +75,6 @@ namespace vk
 		VkExtent2D mExtent = {};
 		VkRenderPass mRenderPass = VK_NULL_HANDLE;
 		bool mDebugInUse = false;
+		uint32_t mImageIndex = UINT32_MAX;
 	};
 }

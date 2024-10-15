@@ -7,6 +7,7 @@
 #include <array>
 #include <stdexcept>
 #include <utils/concatenate.h>
+#include <cassert>
 
 components::ShadowMapRenderPass::ShadowMapRenderPass(uint32_t w, uint32_t h, uint32_t numberOfColorAttachments)
     :vk::RenderPass("ShadowMapRenderPass", {0.3f, 0.3f, 0.3f, 1.0f}), 
@@ -24,6 +25,95 @@ components::ShadowMapRenderPass::ShadowMapRenderPass(uint32_t w, uint32_t h, uin
 	SetRenderPass();
     //create the frame buffer
 	SetFramebuffer();
+}
+
+void components::ShadowMapRenderPass::EndRenderPass(VkCommandBuffer cmdBuffer)
+{
+	///TODO shadow: transition image layout
+	assert(mImageIndex != UINT32_MAX);
+	auto depthBuffer = mBuffers.at(mImageIndex);
+	
+	// Define the depth image barrier
+	VkImageMemoryBarrier depthImageBarrier = {};
+	depthImageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	depthImageBarrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;//from depth stencil
+	depthImageBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;//to sampleable-by-shader
+	depthImageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; //same queue family
+	depthImageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	depthImageBarrier.image = depthBuffer->GetImage();  // Your depth image handle
+	depthImageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	depthImageBarrier.subresourceRange.baseMipLevel = 0;
+	depthImageBarrier.subresourceRange.levelCount = 1;
+	depthImageBarrier.subresourceRange.baseArrayLayer = 0;
+	depthImageBarrier.subresourceRange.layerCount = 1;
+
+	// Set up the access masks
+	depthImageBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;  // Depth write in shadow pass
+	depthImageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;                     // Shader read in next pass
+
+	// Define pipeline stages
+	VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+	VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+	// Issue the pipeline barrier at the end of the shadow pass
+	vkCmdPipelineBarrier(
+		cmdBuffer,
+		srcStageMask,            // Source stage (depth writing)
+		dstStageMask,            // Destination stage (shader reading)
+		0,                       // No additional flags
+		0, nullptr,              // No memory barriers
+		0, nullptr,              // No buffer barriers
+		1, &depthImageBarrier    // Transition the depth image
+	);
+
+
+	vk::RenderPass::EndRenderPass(cmdBuffer);
+}
+
+void components::ShadowMapRenderPass::BeginRenderPass(VkCommandBuffer cmdBuffer, uint32_t imageIndex, uint32_t frameNumber)
+{
+	/*The depth buffer will be unuseable when i enter here for the second time because it's transitioned to shader sampler layout
+	in the end of the render pass. So i have to revert it back to writable by the depth calculations here, before doing thing with it*/
+	vk::RenderPass::BeginRenderPass(cmdBuffer, imageIndex, frameNumber);
+	if (firstRun) {
+		firstRun = false; //the 1st time i run this function the image buffer will be in a correct layout so we can skip
+		return;
+	}
+	assert(mImageIndex != UINT32_MAX);
+	auto depthBuffer = mBuffers.at(mImageIndex);
+
+	// Define the depth image barrier
+	VkImageMemoryBarrier depthImageBarrier = {};
+	depthImageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	depthImageBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;//from sampleable by shader
+	depthImageBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;//to depth stencil
+	depthImageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; //same queue family
+	depthImageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	depthImageBarrier.image = depthBuffer->GetImage();  // Your depth image handle
+	depthImageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	depthImageBarrier.subresourceRange.baseMipLevel = 0;
+	depthImageBarrier.subresourceRange.levelCount = 1;
+	depthImageBarrier.subresourceRange.baseArrayLayer = 0;
+	depthImageBarrier.subresourceRange.layerCount = 1;
+
+	// Set up the access masks
+	depthImageBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	depthImageBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;                   
+
+	// Define pipeline stages
+	VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+	// Issue the pipeline barrier at the end of the shadow pass
+	vkCmdPipelineBarrier(
+		cmdBuffer,
+		srcStageMask,            // Source stage (depth writing)
+		dstStageMask,            // Destination stage (shader reading)
+		0,                       // No additional flags
+		0, nullptr,              // No memory barriers
+		0, nullptr,              // No buffer barriers
+		1, &depthImageBarrier    // Transition the depth image
+	);
 }
 
 void components::ShadowMapRenderPass::SetRenderPass()
