@@ -179,7 +179,7 @@ namespace components {
     {
         /////Create the model buffer, one for each frame, with size for 1000 objs/////
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            utils::CreateAlignedBuffer(sizeof(CameraUniformBuffer),
+            utils::CreateAlignedBuffer(sizeof(ModelUniformBuffer),
                 MAX_NUMBER_OF_OBJS,
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,

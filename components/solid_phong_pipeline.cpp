@@ -67,7 +67,7 @@ namespace components
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
         rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
         rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
         rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -453,7 +453,7 @@ namespace components
             VkDescriptorBufferInfo directionalLightBufferInfo{};
             directionalLightBufferInfo.buffer = mDirectionalLightBuffer[i];  
             directionalLightBufferInfo.offset = 0;  // Adjust offset per object/model
-            directionalLightBufferInfo.range = utils::AlignedSize(sizeof(DirectionalLightPropertiesUniformBuffer), 1, vk::Instance::gInstance->GetPhysicalDevice()); 
+            directionalLightBufferInfo.range =  sizeof(DirectionalLightPropertiesUniformBuffer); 
             VkWriteDescriptorSet directionalLightDescriptorWrite{};
             directionalLightDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             directionalLightDescriptorWrite.dstSet = mDirectionalLightDescriptorSet[i];  // Descriptor set to update
@@ -491,9 +491,7 @@ namespace components
     void SolidPhongPipeline::CreateDirectionalLightDataBuffer()
     {
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            utils::CreateAlignedBuffer(sizeof(DirectionalLightPropertiesUniformBuffer),
-                1,
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            utils::CreateBuffer(sizeof(DirectionalLightPropertiesUniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 mDirectionalLightBuffer[i], mDirectionalLightMemory[i]);
         }
@@ -503,7 +501,7 @@ namespace components
     {
         /////Create the model buffer, one for each frame, with size for 1000 objs/////
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            utils::CreateAlignedBuffer(sizeof(CameraUniformBuffer), 
+            utils::CreateAlignedBuffer(sizeof(ModelUniformBuffer), 
                 MAX_NUMBER_OF_OBJS,
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,

@@ -43,28 +43,40 @@ int main(int argc, char** argv)
 	components::Camera* camera = new components::Camera("mainCamera");
 	camera->mFOV = glm::radians(60.0f);
 	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
-	camera->mZNear = 0.1f;
+	camera->mZNear = 0.01f;
 	camera->mZFar = 100.0f;
-	camera->mPosition = { 10, 5,0};
+	camera->mPosition = { 20, 10,0};
 	camera->LookTo({ 0,0,0 });
 	/////////////Create the game objects
+	components::Renderable* myBox = new components::Renderable("box", *boxMesh);
+	myBox->mPosition = {-3,0,0 };
+	//myBox->LookTo({ 1,0,0 });
+
 	components::Renderable* myMonkey = new components::Renderable("monkey", *monkeyMesh);
 	myMonkey->mPosition = { 0,0,0 };
-	myMonkey->LookTo({ 1,1,0 });
+	//myMonkey->LookTo({ 1,0,0 });
 
 	components::Renderable* myBall = new components::Renderable("ball", *ballMesh);
-	myBall->mPosition = { 5,0,0 };
-	myBall->LookTo({ 1,0,0 });
-	std::vector<components::Renderable*> shadowProjectors{ myMonkey, myBall};
-	std::vector<components::Renderable*> phongPipelineObjects{ myMonkey, myBall};
-	/*for (auto i = -5; i < 5; i++) {
-		for (auto j = -5; j < 5; j++) {
-			components::Renderable* myFloor = new components::Renderable("Floor", *floorMesh);
-			myFloor->mPosition = { i*2, -2,j*2 };
-			shadowProjectors.push_back(myFloor);
-			phongPipelineObjects.push_back(myFloor);
-		}
-	}*/
+	myBall->mPosition = { 3,0,0 };
+	//myBall->LookTo({ 1,0,0 });
+	std::vector<components::Renderable*> shadowProjectors{ 
+		myMonkey, 
+		myBall, 
+		myBox
+	};
+	std::vector<components::Renderable*> phongPipelineObjects{ 
+		myMonkey, 
+		myBall, 
+		myBox
+	};
+	//for (auto i = -5; i < 5; i++) {
+	//	for (auto j = -5; j < 5; j++) {
+	//		components::Renderable* myFloor = new components::Renderable("Floor", *boxMesh);
+	//		myFloor->mPosition = { i*2, 2,j*2 };
+	//		shadowProjectors.push_back(myFloor);
+	//		phongPipelineObjects.push_back(myFloor);
+	//	}
+	//}
 
 	components::DirectionalLight* myDirectionalLight = new components::DirectionalLight();
 	//myDirectionalLight->mPosition = { 0,0,0 };

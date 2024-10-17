@@ -11,7 +11,7 @@ namespace utils {
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
         VkDeviceSize minAlignment = properties.limits.minUniformBufferOffsetAlignment;
-        VkDeviceSize alignedSize = (unalignedStructSize + minAlignment - 1) & ~(minAlignment - 1);
+        VkDeviceSize alignedSize = (minAlignment + minAlignment - 1) & ~(minAlignment - 1);
         VkDeviceSize finalSize = alignedSize * amount;
         return finalSize;
     }
