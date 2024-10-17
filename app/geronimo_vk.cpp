@@ -33,8 +33,12 @@ int main(int argc, char** argv)
 	///////////////load meshes
 	auto boxMeshData = io::LoadMeshes("box.glb");
 	auto floorMeshData = io::LoadMeshes("floor.glb");
+	auto monkeyMeshData = io::LoadMeshes("monkey.glb");
+	auto ballMeshData = io::LoadMeshes("ball.glb");
 	components::Mesh* boxMesh = new components::Mesh(boxMeshData[0]);//there can be many meshes per file, i know that in this file there's only one.
 	components::Mesh* floorMesh = new components::Mesh(floorMeshData[0]);
+	components::Mesh* monkeyMesh = new components::Mesh(monkeyMeshData[0]);
+	components::Mesh* ballMesh = new components::Mesh(ballMeshData[0]);
 	//////////////Create the camera
 	components::Camera* camera = new components::Camera("mainCamera");
 	camera->mFOV = glm::radians(60.0f);
@@ -44,27 +48,29 @@ int main(int argc, char** argv)
 	camera->mPosition = { 10, 5,0};
 	camera->LookTo({ 0,0,0 });
 	/////////////Create the game objects
-	components::Renderable* myBox = new components::Renderable("MyBox", *boxMesh);
-	myBox->mPosition = { 0,0,0 };
-	myBox->LookTo({ 1,1,0 });
+	components::Renderable* myMonkey = new components::Renderable("monkey", *monkeyMesh);
+	myMonkey->mPosition = { 0,0,0 };
+	myMonkey->LookTo({ 1,1,0 });
 
-	components::Renderable* myBox2 = new components::Renderable("MyBox2", *boxMesh);
-	myBox2->mPosition = { 5,0,0 };
-	myBox2->LookTo({ 1,0,0 });
-	std::vector<components::Renderable*> shadowProjectors{ myBox, myBox2};
-	std::vector<components::Renderable*> phongPipelineObjects{ myBox, myBox2};
-	for (auto i = -5; i < 5; i++) {
+	components::Renderable* myBall = new components::Renderable("ball", *ballMesh);
+	myBall->mPosition = { 5,0,0 };
+	myBall->LookTo({ 1,0,0 });
+	std::vector<components::Renderable*> shadowProjectors{ myMonkey, myBall};
+	std::vector<components::Renderable*> phongPipelineObjects{ myMonkey, myBall};
+	/*for (auto i = -5; i < 5; i++) {
 		for (auto j = -5; j < 5; j++) {
 			components::Renderable* myFloor = new components::Renderable("Floor", *floorMesh);
 			myFloor->mPosition = { i*2, -2,j*2 };
 			shadowProjectors.push_back(myFloor);
 			phongPipelineObjects.push_back(myFloor);
 		}
-	}
+	}*/
 
 	components::DirectionalLight* myDirectionalLight = new components::DirectionalLight();
-	myDirectionalLight->mPosition = { 0,0,0 };
-	myDirectionalLight->LookTo({ 0,-1,0 });
+	//myDirectionalLight->mPosition = { 0,0,0 };
+	myDirectionalLight->SetColor({ 1,1,1 });
+	myDirectionalLight->SetIntensity(1.0f);
+	//myDirectionalLight->LookTo({ 0,5,0 });
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize
@@ -107,12 +113,7 @@ int main(int argc, char** argv)
 
 		//Shadow map: activate pipelines that use the render pass
 		directionaLightShadowMapPipeline->Bind(frame.CommandBuffer(), currentFrameId);
-		//glm::vec3 lightDirection = { 1,0,1 };
-		//glm::vec3 lightPos = -lightDirection * 30.0f; //TODO light: do not use hardcoded distance
-		//glm::vec3 lightTarget = { 0,0,0 };//TODO light: calculate the center of the visible objects, based on the frustum
-		//glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, {0,1,0});
-		//glm::mat4 lightProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.f);//TODO light: calculate based on the objects visible on the frustum
-		//glm::mat4 lightMatrix = lightProj * lightView;
+
 		components::LightSpaceMatrixUniformBuffer lightMatrixObj{ myDirectionalLight->GetLightMatrix()};
 		directionaLightShadowMapPipeline->SetLightMatrix(frame.CommandBuffer(), lightMatrixObj);
 		for (auto& o : shadowProjectors) {
@@ -146,7 +147,7 @@ int main(int argc, char** argv)
 	window.MainLoop();
 	//beginning shutdown
 	syncService.WaitDeviceIdle();
-	delete myBox;
+	delete myMonkey;
 	delete boxMesh;
 	delete camera;
 	delete phongPipeline;

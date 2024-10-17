@@ -28,7 +28,8 @@ layout(set = 3, binding = 0) uniform DirectionalLightProperties {
 void main() 
 {
     fragPosition = vec3(model.mat * vec4(inPosition, 1.0));
-    fragNormal = mat3(transpose(inverse(model.mat))) * inNormal;
+    mat3 normalMatrix = transpose(inverse(mat3(model.mat)));
+    fragNormal = normalize( normalMatrix * inNormal );
     fragTexCoord = uv0;
     fragShadowCoord = directionalLight.lightSpaceMatrix * vec4(fragPosition, 1.0);
     gl_Position = camera.proj * camera.view * vec4(fragPosition, 1.0);

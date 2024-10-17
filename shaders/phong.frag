@@ -30,7 +30,7 @@ void main()
 {
     vec3 color = vec3(1,0,0);
     vec3 normal = normalize(fragNormal);
-    vec3 lightDir = normalize(-directionalLight.direction);
+    vec3 lightDir = normalize(directionalLight.direction);//normalize(-directionalLight.direction);
     vec3 viewDir = normalize(camera.viewPos - fragPosition);
     vec3 reflectDir = reflect(-lightDir, normal);
     //TODO ambient: Create a descriptor set for ambient
@@ -52,9 +52,10 @@ void main()
     // Shadow
     float shadow = calculateShadow(fragShadowCoord);
 
-    vec3 lighting = ambient + 
-        (1.0 - shadow) * 
-        (diffuse + specular);
+    vec3 lighting = color * diff * directionalLight.colorAndIntensity.rgb * directionalLight.colorAndIntensity.a;
+//        ambient + 
+//        (1.0 - shadow) * 
+//        (diffuse + specular);
     outColor = vec4(lighting, 1.0);
 
 }
