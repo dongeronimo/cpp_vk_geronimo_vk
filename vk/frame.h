@@ -19,7 +19,7 @@ namespace vk
             vk::SwapChain& swapChain);
         void Foobar();
         bool BeginFrame();
-        uint32_t ImageIndex() { return mImageIndex; }
+        uint32_t mImageIndex;
         const size_t mCurrentFrame;
         VkCommandBuffer CommandBuffer();
         void EndFrame();
@@ -29,6 +29,6 @@ namespace vk
         vk::SyncronizationService& mSyncService;
         vk::SwapChain& mSwapChain;
         bool IsDegenerateFramebuffer() const;
-        uint32_t mImageIndex;
+
     };
 }

@@ -129,15 +129,17 @@ namespace components
             throw std::runtime_error("failed to create graphics pipeline!");
         }
     }
-    SolidPhongPipeline::SolidPhongPipeline(const vk::RenderPass& rp)
+    SolidPhongPipeline::SolidPhongPipeline(const vk::RenderPass& rp, const std::vector<VkImageView>& shadowMapImageViews)
         :vk::Pipeline("SolidPhongPipeline", rp)
     {
         const auto device = vk::Device::gDevice->GetDevice();
         CreateDescriptorSetLayout();
+ 
         CreateDescriptorPool();
         CreateCameraBuffer();
         CreateModelBuffer();
-        CreateDescriptorSet();
+        CreateDirectionalLightDataBuffer();
+        CreateDescriptorSet(shadowMapImageViews);
         CreatePipelineLayout();
         ////Load the shaders////
         mVertexShader = vk::LoadShaderModule(device, "phong.vert.spv");
@@ -148,6 +150,7 @@ namespace components
     SolidPhongPipeline::~SolidPhongPipeline()
     {
         const auto device = vk::Device::gDevice->GetDevice();
+        vkDestroySampler(device, mShadowDepthSampler, nullptr);
         vkDestroyShaderModule(device, mVertexShader, nullptr);
         vkDestroyShaderModule(device, mFragmentShader, nullptr);
         vkDestroyDescriptorPool(device, mDescriptorPool, nullptr);
@@ -157,6 +160,10 @@ namespace components
         for (auto& m : mCameraBufferMemory) {
             vkFreeMemory(device, m, nullptr);
         }
+    }
+    void SolidPhongPipeline::ActivateShadowMap(uint32_t framebufferImageNumber, VkCommandBuffer buffer)
+    {
+        vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 2, 1, &mShadowMapDescriptorSet[framebufferImageNumber], 0, nullptr);
     }
     void SolidPhongPipeline::Bind(VkCommandBuffer buffer, uint32_t currentFrame)
     {
@@ -196,6 +203,34 @@ namespace components
         return bindingDescription;
     }
 
+    void SolidPhongPipeline::CreateDepthSampler()
+    {
+        const auto device = vk::Device::gDevice->GetDevice();
+        VkSamplerCreateInfo samplerInfo = {};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_LINEAR;  // Magnification filter
+        samplerInfo.minFilter = VK_FILTER_LINEAR;  // Minification filter
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;  // Clamps coordinates outside the image to the edge
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.anisotropyEnable = VK_FALSE;  // Anisotropy not needed for depth sampling
+        samplerInfo.maxAnisotropy = 1.0f;  // Only relevant if anisotropy is enabled
+        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;  // Border color, used with clamp-to-border mode (not in this case)
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;  // Use normalized coordinates (range [0, 1])
+        samplerInfo.compareEnable = VK_TRUE;  // Enable comparison, important for shadow mapping
+        samplerInfo.compareOp = VK_COMPARE_OP_LESS;  // Comparison function for depth comparison (e.g., shadow mapping)
+        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;  // Mipmapping, though not relevant for a single depth image
+        samplerInfo.minLod = 0.0f;  // Min level of detail
+        samplerInfo.maxLod = 0.0f;  // Max level of detail
+
+        VkResult result = vkCreateSampler(device, &samplerInfo, nullptr, &mShadowDepthSampler);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create depth sampler!");
+        }
+        auto _n = Concatenate(mName, "DepthSampler");
+        SET_NAME(mShadowDepthSampler, VK_OBJECT_TYPE_SAMPLER, _n.c_str());
+    }
+
     void SolidPhongPipeline::CreateDescriptorSetLayout()
     {
         const auto device = vk::Device::gDevice->GetDevice();
@@ -233,17 +268,49 @@ namespace components
         }
         auto n2 = Concatenate(mName, "ModelDescriptorSetLayout");
         SET_NAME(modelDescriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n2.c_str());
-        
-        mDescriptorSetLayouts.push_back(modelDescriptorSetLayout);
-        mDescriptorSetLayouts.push_back(cameraDescriptorSetLayout);
+        ////////////////////////////////////////////////////////////////////////
+        VkDescriptorSetLayoutBinding shadowMapBindings{};
+        shadowMapBindings.binding = 0;
+        shadowMapBindings.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        shadowMapBindings.descriptorCount = 1;
+        shadowMapBindings.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shadowMapBindings.pImmutableSamplers = nullptr;  // No immutable samplers
 
+        VkDescriptorSetLayoutCreateInfo shadowMapLayoutInfo{};
+        shadowMapLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        shadowMapLayoutInfo.bindingCount = 1;
+        shadowMapLayoutInfo.pBindings = &shadowMapBindings;
 
+        VkDescriptorSetLayout shadowMapDescriptorSetLayout = VK_NULL_HANDLE;
+        if (vkCreateDescriptorSetLayout(device, &shadowMapLayoutInfo, nullptr, &shadowMapDescriptorSetLayout) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create descriptor set layout!");
+        }
+        auto n3 = Concatenate(mName, "ShadowMapDescriptorSetLayout");
+        SET_NAME(shadowMapDescriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n3.c_str());
+        //////////////////////////////////////////////////////////////////////////////////
+        VkDescriptorSetLayoutBinding directionalLightBinding;
+        directionalLightBinding.binding = 0;
+        directionalLightBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        directionalLightBinding.descriptorCount = 1;
+        directionalLightBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        shadowMapBindings.pImmutableSamplers = nullptr;  // No immutable samplers
+        VkDescriptorSetLayoutCreateInfo directionalLightLayoutInfo{};
+        directionalLightLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        directionalLightLayoutInfo.bindingCount = 1;
+        directionalLightLayoutInfo.pBindings = &directionalLightBinding;
+        VkDescriptorSetLayout directionalLightLayout = VK_NULL_HANDLE;
+        vkCreateDescriptorSetLayout(device, &directionalLightLayoutInfo, nullptr, &directionalLightLayout);
+        //Order matter!
+        mDescriptorSetLayouts.push_back(modelDescriptorSetLayout); //set 0 - model matrix
+        mDescriptorSetLayouts.push_back(cameraDescriptorSetLayout); //set 1 - camera (view and proj)
+        mDescriptorSetLayouts.push_back(shadowMapDescriptorSetLayout); //set 2 - directional light shadow map
+        mDescriptorSetLayouts.push_back(directionalLightLayout);//set 3 - directional light properties
     }
 
     void SolidPhongPipeline::CreateDescriptorPool()
     {
         const auto device = vk::Device::gDevice->GetDevice();
-        std::array<VkDescriptorPoolSize, 2> poolSizes;
+        std::array<VkDescriptorPoolSize, 4> poolSizes;
         // Camera - uniform buffer, one per frame
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
@@ -252,12 +319,22 @@ namespace components
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         poolSizes[1].descriptorCount = MAX_FRAMES_IN_FLIGHT; // Adjust this for the number of models
 
+        // Shadow map - combined image sampler, one per frame
+        poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[2].descriptorCount = 20 *MAX_FRAMES_IN_FLIGHT;  
+        // Directional light data
+        poolSizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[3].descriptorCount = MAX_FRAMES_IN_FLIGHT;
         /////Create the descriptor pool/////
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = 2 * MAX_FRAMES_IN_FLIGHT; // 2 descriptor sets per frame
+        poolInfo.maxSets = 1+ //One for the model
+            1+ //one for the camera
+            1+ //one for the directional light
+            5 * //a lot for the directional light shadow map sampler 
+            MAX_FRAMES_IN_FLIGHT; 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor pool!");
         }
@@ -276,10 +353,9 @@ namespace components
 
     }
 
-    void SolidPhongPipeline::CreateDescriptorSet()
+    void SolidPhongPipeline::CreateDescriptorSet(const std::vector<VkImageView>& shadowMapImageViews)
     {
         const auto device = vk::Device::gDevice->GetDevice();
-
         ///model descriptor set
         // Allocate model descriptor sets (similar to camera)
         std::vector<VkDescriptorSetLayout> modelLayouts(MAX_FRAMES_IN_FLIGHT, mDescriptorSetLayouts[0]);
@@ -301,7 +377,50 @@ namespace components
         if (vkAllocateDescriptorSets(device, &allocInfoCamera, mCameraDescriptorSet.data()) != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate camera descriptor sets!");
         }
+        //shadow map descriptor set - their size is based on the number of images in the framebuffer, not in max_frames_in_flight!
+        std::vector<VkDescriptorSetLayout> shadowMapLayouts(shadowMapImageViews.size(),
+            mDescriptorSetLayouts[2]);
+        mShadowMapDescriptorSet.resize(shadowMapImageViews.size());
+        VkDescriptorSetAllocateInfo shadowMapAllocInfo{};
+        shadowMapAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        shadowMapAllocInfo.descriptorPool = mDescriptorPool;
+        shadowMapAllocInfo.descriptorSetCount = static_cast<uint32_t>(shadowMapImageViews.size());
+        shadowMapAllocInfo.pSetLayouts = shadowMapLayouts.data();
+        if (vkAllocateDescriptorSets(device, &shadowMapAllocInfo, 
+            mShadowMapDescriptorSet.data()) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to allocate shadow map descriptor sets!");
+        }
 
+        ///directional light data descriptor set
+        std::vector<VkDescriptorSetLayout> directionalLightDataLayouts(MAX_FRAMES_IN_FLIGHT, mDescriptorSetLayouts[3]);
+        VkDescriptorSetAllocateInfo allocInfoDirectionalLight{};
+        allocInfoDirectionalLight.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfoDirectionalLight.descriptorPool = mDescriptorPool;  // Pool created earlier
+        allocInfoDirectionalLight.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+        allocInfoDirectionalLight.pSetLayouts = directionalLightDataLayouts.data();  // Layout for directional light data
+        if (vkAllocateDescriptorSets(device, &allocInfoCamera, mDirectionalLightDescriptorSet.data()) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to allocate camera descriptor sets!");
+        }
+        CreateDepthSampler();
+        for (size_t i = 0; i < shadowMapImageViews.size(); i++)
+        {
+            VkDescriptorImageInfo shadowMapImageInfo{};
+            shadowMapImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;  // Layout for reading depth
+            shadowMapImageInfo.imageView = shadowMapImageViews[i];  // The depth image view for the shadow map (one per frame)
+            shadowMapImageInfo.sampler = mShadowDepthSampler;  // The sampler you created earlier
+            VkWriteDescriptorSet shadowMapWrite{};
+            shadowMapWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            shadowMapWrite.dstSet = mShadowMapDescriptorSet.at(i);
+            shadowMapWrite.dstBinding = 0;
+            shadowMapWrite.dstArrayElement = 0;
+            shadowMapWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            shadowMapWrite.descriptorCount = 1;
+            shadowMapWrite.pImageInfo = &shadowMapImageInfo;
+            std::array<VkWriteDescriptorSet,1> descriptorWrites = { shadowMapWrite };
+            // Perform the update
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
+        }
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo cameraBufferInfo{};
@@ -331,7 +450,21 @@ namespace components
             modelDescriptorWrite.descriptorCount = 1;  // One buffer
             modelDescriptorWrite.pBufferInfo = &modelBufferInfo;  // Buffer info
 
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites = { cameraDescriptorWrite, modelDescriptorWrite };
+            VkDescriptorBufferInfo directionalLightBufferInfo{};
+            directionalLightBufferInfo.buffer = mDirectionalLightBuffer[i];  
+            directionalLightBufferInfo.offset = 0;  // Adjust offset per object/model
+            directionalLightBufferInfo.range = utils::AlignedSize(sizeof(DirectionalLightPropertiesUniformBuffer), 1, vk::Instance::gInstance->GetPhysicalDevice()); 
+            VkWriteDescriptorSet directionalLightDescriptorWrite{};
+            directionalLightDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            directionalLightDescriptorWrite.dstSet = mDirectionalLightDescriptorSet[i];  // Descriptor set to update
+            directionalLightDescriptorWrite.dstBinding = 0;  // Binding 0 in the shader (model)
+            directionalLightDescriptorWrite.dstArrayElement = 0;
+            directionalLightDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            directionalLightDescriptorWrite.descriptorCount = 1;  // One buffer
+            directionalLightDescriptorWrite.pBufferInfo = &directionalLightBufferInfo;  // Buffer info
+
+
+            std::array<VkWriteDescriptorSet, 3> descriptorWrites = { cameraDescriptorWrite, modelDescriptorWrite,directionalLightDescriptorWrite };
             // Perform the update
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
@@ -353,6 +486,17 @@ namespace components
             throw std::runtime_error("Failed to allocate descriptor sets!");
         }
 
+    }
+
+    void SolidPhongPipeline::CreateDirectionalLightDataBuffer()
+    {
+        for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            utils::CreateAlignedBuffer(sizeof(DirectionalLightPropertiesUniformBuffer),
+                1,
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                mDirectionalLightBuffer[i], mDirectionalLightMemory[i]);
+        }
     }
 
     void SolidPhongPipeline::CreateModelBuffer()
@@ -447,6 +591,27 @@ namespace components
                 1, //number of dynamic offsets
                 &offset); //dynamic offset
         }
+    }
+
+    void DirectionalLightUniform::SetUniform(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer)
+    {
+        //get my pipeline
+        const SolidPhongPipeline& phong = dynamic_cast<const SolidPhongPipeline&>(pipeline);
+        //map camera data and copy to the gpu
+        const auto device = vk::Device::gDevice->GetDevice();
+        void* data;
+        vkMapMemory(device,
+            phong.mDirectionalLightMemory[currentFrame],
+            0, sizeof(DirectionalLightPropertiesUniformBuffer), 0, &data);
+        memcpy(data, &mLightData, sizeof(DirectionalLightPropertiesUniformBuffer));
+        vkUnmapMemory(device, phong.mDirectionalLightMemory[currentFrame]);
+        //bind camera descriptor set
+        vkCmdBindDescriptorSets(cmdBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            phong.mPipelineLayout,
+            3,
+            1,
+            &phong.mDirectionalLightDescriptorSet[currentFrame], 0, nullptr);
     }
 
 }

@@ -3,7 +3,7 @@
 #include "data_structures/ring_buffer.h"
 #include <memory>
 #include "vk/depth_buffer.h"
-
+#include <algorithm>
 namespace components {
 	class DepthBuffer;
 	class ShadowMapRenderPass : public vk::RenderPass {
@@ -11,6 +11,13 @@ namespace components {
 		ShadowMapRenderPass(uint32_t w, uint32_t h, uint32_t numberOfColorAttachments);
 		void EndRenderPass(VkCommandBuffer cmdBuffer) override;
 		void BeginRenderPass(VkCommandBuffer cmdBuffer, uint32_t imageIndex, uint32_t frameNumber)override;
+		std::vector<VkImageView> GetShadowBufferImageViews() {
+			std::vector<VkImageView> r(mBuffers.size());
+			std::transform(mBuffers.begin(), mBuffers.end(), r.begin(), [](vk::DepthBuffer* val) {
+				return val->GetImageView();
+			});
+			return r;
+		}
 		~ShadowMapRenderPass();
 	private:
 		bool firstRun = true;

@@ -41,6 +41,5 @@ namespace vk {
         assert(mDebugInUse);
         vkCmdEndRenderPass(cmdBuffer);
         vk::EndMark(cmdBuffer);
-        mImageIndex = UINT32_MAX;
     }
 }

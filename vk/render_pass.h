@@ -52,7 +52,9 @@ namespace vk
 		/// THe color in renderDoc
 		/// </summary>
 		const std::array<float, 4> mDebugMarkColor;
-
+		void SetImageIndex(uint32_t idx) { 
+			mImageIndex = idx; 
+		}
 		VkExtent2D GetExtent()const {
 			return mExtent;
 		}

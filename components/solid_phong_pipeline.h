@@ -11,6 +11,14 @@ namespace vk {
 }
 namespace components
 {
+    class DirectionalLightUniform : public vk::Uniform {
+    public:
+        DirectionalLightPropertiesUniformBuffer mLightData;
+        virtual void SetUniform(uint32_t currentFrame,
+            const vk::Pipeline& pipeline,
+            VkCommandBuffer cmdBuffer) override;
+        virtual ~DirectionalLightUniform() = default;
+    };
     class CameraUniform : public vk::Uniform {
     public:
         CameraUniformBuffer mCameraData;
@@ -33,11 +41,13 @@ namespace components
 
     class SolidPhongPipeline : public vk::Pipeline {
     public:
-        SolidPhongPipeline(const vk::RenderPass& rp);
+        SolidPhongPipeline(const vk::RenderPass& rp, const std::vector<VkImageView>& shadowMapImageViews);
         ~SolidPhongPipeline();
+        void ActivateShadowMap(uint32_t framebufferImageNumber, VkCommandBuffer buffer);
         void Bind(VkCommandBuffer buffer, uint32_t currentFrame) override;
         friend class CameraUniform;
         friend class ModelMatrixUniform;
+        friend class DirectionalLightUniform;
         void Recreate();
     private:
         std::vector<VkVertexInputAttributeDescription> AttributeDescription();
@@ -50,14 +60,23 @@ namespace components
         ring_buffer_t<VkBuffer> mModelBuffer;
         ring_buffer_t<VkDeviceMemory> mModelBufferMemory;
         ring_buffer_t<VkDescriptorSet> mModelDescriptorSet;
+
+        std::vector<VkDescriptorSet> mShadowMapDescriptorSet;
+        
+        ring_buffer_t<VkBuffer> mDirectionalLightBuffer;
+        ring_buffer_t<VkDeviceMemory> mDirectionalLightMemory;
+        ring_buffer_t<VkDescriptorSet> mDirectionalLightDescriptorSet;
+
         //TODO shadow: add sampler to sample the shadow data
+        VkSampler mShadowDepthSampler = VK_NULL_HANDLE;
         //TODO shadow: update the shader to use the shadow map
 
-            
+        void CreateDepthSampler();
         void CreateDescriptorSetLayout();
         void CreateDescriptorPool();
         void CreateCameraBuffer();
-        void CreateDescriptorSet();
+        void CreateDirectionalLightDataBuffer();
+        void CreateDescriptorSet(const std::vector<VkImageView>& shadowMapImageViews);
         void CreatePipelineLayout();
         void CreateModelBuffer();
         VkShaderModule mVertexShader, mFragmentShader;

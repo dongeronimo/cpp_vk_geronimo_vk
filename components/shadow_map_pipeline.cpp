@@ -8,6 +8,7 @@
 #include <utils/vk_utils.h>
 #include "solid_phong_pipeline.h"
 #include <vk/instance.h>
+#include <algorithm>
 std::string smp_name = "DirectionalShadowMapPipeline";
 namespace components {
     DirectionalLightShadowMapPipeline::DirectionalLightShadowMapPipeline(const vk::RenderPass& rp)
@@ -143,6 +144,8 @@ namespace components {
     {
         vkCmdPushConstants(buffer, mPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(LightSpaceMatrixUniformBuffer), &lm);
     }
+
+
 
     void DirectionalLightShadowMapPipeline::CreateDescriptorSetLayout()
     {
