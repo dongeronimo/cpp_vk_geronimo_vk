@@ -43,7 +43,7 @@ void main()
         color; //TODO material: this will come from the material descriptor set
 
     // Specular
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 64.0);
     vec3 specular = spec * 
         directionalLight.colorAndIntensity.rgb *
         directionalLight.colorAndIntensity.a *
@@ -52,8 +52,10 @@ void main()
     // Shadow
     float shadow = calculateShadow(fragShadowCoord);
 
-    vec3 lighting = color * diff * directionalLight.colorAndIntensity.rgb * directionalLight.colorAndIntensity.a;
-//        ambient + 
+//    vec3 lighting = color * diff * directionalLight.colorAndIntensity.rgb * directionalLight.colorAndIntensity.a;
+    vec3 lighting = 
+            ambient +
+            (diffuse + specular );
 //        (1.0 - shadow) * 
 //        (diffuse + specular);
     outColor = vec4(lighting, 1.0);
