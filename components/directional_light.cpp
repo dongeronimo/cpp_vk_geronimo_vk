@@ -10,7 +10,7 @@ namespace components
         glm::vec3 lightTarget = { 0,0,0 };//TODO light: calculate the center of the visible objects, based on the frustum
         glm::mat4 lightView = glm::lookAtRH(lightPos, lightTarget, { 0,1,0 });
         glm::mat4 lightProj = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 0.001f, 10.f);//TODO light: calculate based on the objects visible on the frustum
-        //lightProj[1][1] *= -1;
+        lightProj[1][1] *= -1;
         glm::mat4 lightMatrix = lightProj * lightView;
         return lightMatrix;
     }
