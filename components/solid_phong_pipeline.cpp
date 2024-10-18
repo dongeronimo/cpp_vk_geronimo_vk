@@ -440,7 +440,7 @@ namespace components
             VkDescriptorBufferInfo modelBufferInfo{};
             modelBufferInfo.buffer = mModelBuffer[i];  // Your model buffer (dynamic)
             modelBufferInfo.offset = 0;  // Adjust offset per object/model
-            modelBufferInfo.range = utils::AlignedSize(sizeof(ModelUniformBuffer), MAX_NUMBER_OF_OBJS, vk::Instance::gInstance->GetPhysicalDevice());  // Size of model data
+            modelBufferInfo.range = utils::AlignedSize(sizeof(ModelUniformBuffer), 1, vk::Instance::gInstance->GetPhysicalDevice());  // Size of model data
             VkWriteDescriptorSet modelDescriptorWrite{};
             modelDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             modelDescriptorWrite.dstSet = mModelDescriptorSet[i];  // Descriptor set to update
@@ -550,7 +550,7 @@ namespace components
                 offset, //offset
                 alignedSize, //size
                 0, &data);
-            memcpy(data, &mModelData, sizeof(CameraUniformBuffer));
+            memcpy(data, &mModelData, sizeof(ModelUniformBuffer));
             vkUnmapMemory(device, phong.mModelBufferMemory[currentFrame]);
             //bind model descriptor set
             vkCmdBindDescriptorSets(cmdBuffer,
@@ -577,7 +577,7 @@ namespace components
                 offset, //offset
                 alignedSize, //size
                 0, &data);
-            memcpy(data, &mModelData, sizeof(CameraUniformBuffer));
+            memcpy(data, &mModelData, sizeof(ModelUniformBuffer));
             vkUnmapMemory(device, dsm.mModelBufferMemory[currentFrame]);
             //bind model descriptor set
             vkCmdBindDescriptorSets(cmdBuffer,

@@ -62,6 +62,6 @@ void main()
     float shadow = calculateShadow(fragShadowCoord);
 
     vec3 lighting = ambient + /*(1.0 - shadow)* */  (diffuse);
-    outColor = vec4(diffuse, 1.0);
+    outColor = vec4(color, 1.0);
 
 }

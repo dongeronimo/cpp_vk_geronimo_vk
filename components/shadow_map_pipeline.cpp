@@ -226,7 +226,7 @@ namespace components {
             VkDescriptorBufferInfo modelBufferInfo{};
             modelBufferInfo.buffer = mModelBuffer[i];  // Your model buffer (dynamic)
             modelBufferInfo.offset = 0;  // Adjust offset per object/model
-            modelBufferInfo.range = utils::AlignedSize(sizeof(ModelUniformBuffer), MAX_NUMBER_OF_OBJS, 
+            modelBufferInfo.range = utils::AlignedSize(sizeof(ModelUniformBuffer), 1, 
                 vk::Instance::gInstance->GetPhysicalDevice());  // Size of model data
             VkWriteDescriptorSet modelDescriptorWrite{};
             modelDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
