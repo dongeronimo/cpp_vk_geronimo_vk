@@ -45,44 +45,36 @@ int main(int argc, char** argv)
 	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 	camera->mZNear = 0.01f;
 	camera->mZFar = 100.0f;
-	camera->mPosition = { 20, 10,0};
+	camera->mPosition = { 10, 5,1};
 	camera->LookTo({ 0,0,0 });
 	/////////////Create the game objects
-	components::Renderable* myBox = new components::Renderable("box", *boxMesh);
-	myBox->mPosition = {-3,0,0 };
+	components::Renderable* myBall1 = new components::Renderable("ball1", *ballMesh);
+	myBall1->mPosition = {-4,0,0};
 	//myBox->LookTo({ 1,0,0 });
 
 	components::Renderable* myMonkey = new components::Renderable("monkey", *monkeyMesh);
-	myMonkey->mPosition = { 0,0,0 };
-	//myMonkey->LookTo({ 1,0,0 });
+	myMonkey->mPosition = { 0,0,0};
+	myMonkey->LookTo({ 100,0,0 });
 
-	components::Renderable* myBall = new components::Renderable("ball", *ballMesh);
-	myBall->mPosition = { 3,0,0 };
+	components::Renderable* myBall2 = new components::Renderable("ball2", *ballMesh);
+	myBall2->mPosition = { 4,0,0 };
 	//myBall->LookTo({ 1,0,0 });
 	std::vector<components::Renderable*> shadowProjectors{ 
 		myMonkey, 
-		myBall, 
-		myBox
+		myBall2, 
+		myBall1
 	};
 	std::vector<components::Renderable*> phongPipelineObjects{ 
 		myMonkey, 
-		myBall, 
-		myBox
+		myBall2, 
+		myBall1
 	};
-	//for (auto i = -5; i < 5; i++) {
-	//	for (auto j = -5; j < 5; j++) {
-	//		components::Renderable* myFloor = new components::Renderable("Floor", *boxMesh);
-	//		myFloor->mPosition = { i*2, 2,j*2 };
-	//		shadowProjectors.push_back(myFloor);
-	//		phongPipelineObjects.push_back(myFloor);
-	//	}
-	//}
+
 
 	components::DirectionalLight* myDirectionalLight = new components::DirectionalLight();
-	//myDirectionalLight->mPosition = { 0,0,0 };
 	myDirectionalLight->SetColor({ 1,1,1 });
 	myDirectionalLight->SetIntensity(1.0f);
-	//myDirectionalLight->LookTo({ 0,5,0 });
+
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize

@@ -20,6 +20,7 @@ layout(set=1, binding=0) uniform Camera
     vec3 viewPos;
 } camera;
 layout(set = 3, binding = 0) uniform DirectionalLightProperties {
+   vec3 test;
    vec3 direction;
    mat4 lightSpaceMatrix;
    vec4 colorAndIntensity;

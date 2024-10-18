@@ -17,6 +17,7 @@ namespace components
     };
 
     struct alignas(16) DirectionalLightPropertiesUniformBuffer {
+        alignas(16) glm::vec3 test;
         alignas(16) glm::vec3 direction;
         alignas(16) glm::mat4 lightSpaceMatrix;
         alignas(16) glm::vec4 colorAndIntensity;

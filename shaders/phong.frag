@@ -13,10 +13,48 @@ layout(set=1, binding=0) uniform Camera{
 } camera;
 layout(set = 2, binding = 0) uniform sampler2D  shadowMap;
 layout(set = 3, binding = 0) uniform DirectionalLightProperties {
+   vec3 test;
    vec3 direction;
    mat4 lightSpaceMatrix;
    vec4 colorAndIntensity;
 } directionalLight;
+mat3 extractRotation(mat4 m) {
+    return mat3(m);
+}
+
+mat3 rotateX(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat3(
+        1.0, 0.0, 0.0,
+        0.0, c, -s,
+        0.0, s, c
+    );
+}
+mat3 rotateY(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat3(
+        c, 0.0, s,
+        0.0, 1.0, 0.0,
+        -s, 0.0, c
+    );
+}
+mat3 rotateZ(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat3(
+        c, -s, 0.0,
+        s, c, 0.0,
+        0.0, 0.0, 1.0
+    );
+}
+
+
+mat3 rotateXYZ(float angleX, float angleY, float angleZ) {
+    return rotateX(angleX) * rotateY(angleY) * rotateZ(angleZ);
+}
+
 
 float calculateShadow(vec4 fragShadowCoord) {
     vec3 projCoords = fragShadowCoord.xyz / fragShadowCoord.w;
@@ -37,13 +75,17 @@ float calculateShadow(vec4 fragShadowCoord) {
 
 void main()
 {
+    //IDK why that was necessary - for some reason the light was being rendered in a rotated position, even if the shadow map is correct
+    mat3 lightRotation = extractRotation(directionalLight.lightSpaceMatrix);
+    mat3 gambiarra = rotateXYZ(0,0,radians(90)) * lightRotation;
+    vec3 lightDirection = normalize(gambiarra[2]);
     vec3 color = vec3(1,0,0);
     vec3 normal = normalize(fragNormal);
-    vec3 lightDir = normalize(-directionalLight.direction);//normalize(-directionalLight.direction);
+    vec3 lightDir = lightDirection;//normalize(-directionalLight.direction);
     vec3 viewDir = normalize(camera.viewPos - fragPosition);
-    vec3 reflectDir = reflect(-lightDir, normal);
-    //TODO ambient: Create a descriptor set for ambient
-    vec3 ambient = 0.1 * color;
+    vec3 reflectDir = reflect(lightDir, normal);
+    ////TODO ambient: Create a descriptor set for ambient
+    vec3 ambient = 0.01 * color;
     // Diffuse
     float diff = max(dot(lightDir, normal), 0.0);
     vec3 diffuse = diff * 
@@ -52,7 +94,7 @@ void main()
         color; //TODO material: this will come from the material descriptor set
 
     // Specular
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 64.0);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
     vec3 specular = spec * 
         directionalLight.colorAndIntensity.rgb *
         directionalLight.colorAndIntensity.a *
@@ -61,7 +103,7 @@ void main()
     // Shadow
     float shadow = calculateShadow(fragShadowCoord);
 
-    vec3 lighting = ambient + /*(1.0 - shadow)* */  (diffuse);
-    outColor = vec4(color, 1.0);
+    vec3 lighting = ambient + /*(1.0 - shadow)* */  (diffuse+specular);
+    outColor = vec4(lighting, 1.0);
 
 }
