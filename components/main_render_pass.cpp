@@ -20,7 +20,7 @@ namespace components
         :vk::RenderPass("mainRenderPass", {1.0f, 0.3f, 0.6f, 1.0f})
     {
         mClearValues.resize(2);
-        SetClearColor({ 1,0,1,1 });
+        SetClearColor({ 0.3f,0,0.3f,1 });
 
         ///Create the swapchain
         mSwapChain = std::make_shared<vk::SwapChain>();

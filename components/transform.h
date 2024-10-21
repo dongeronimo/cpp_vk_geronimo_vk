@@ -16,7 +16,7 @@ namespace components
                 glm::quat()
             )
         {
-            gTransformCounter++;
+            gTransformCounter++; 
         }
         /// <summary>
         /// Rotates so that it's looking from mOrientation to target
@@ -28,7 +28,7 @@ namespace components
             mOrientation = glm::toQuat(lookAtMat);
         }
         void SetPosition(glm::vec3 v) {
-           v.y = -v.y;
+           //v.y = -v.y;
            /*            float _x = v.x;
             v.x = v.z;
             v.z = _x;*/

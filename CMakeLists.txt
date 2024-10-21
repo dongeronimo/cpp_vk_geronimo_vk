@@ -100,6 +100,7 @@ target_compile_definitions(geronimo_vk_demo PRIVATE
     SCREEN_WIDTH=1024
     SCREEN_HEIGH=768
     GLM_ENABLE_EXPERIMENTAL
+    GLM_FORCE_LEFT_HANDED 
 )
 target_compile_features(geronimo_vk_demo PRIVATE cxx_std_17)
 add_custom_command(

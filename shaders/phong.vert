@@ -21,7 +21,7 @@ void main()
 {
     vec4 worldPosition = model.mat * vec4(inPosition, 1.0);
     fragPosition = worldPosition.xyz;
-    gl_Position = camera.proj * camera.view * model.mat * vec4(inPosition, 1.0);
+    gl_Position = camera.proj * camera.view * worldPosition;
 }
 //#version 450
 //

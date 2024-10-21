@@ -44,9 +44,9 @@ namespace components
 
         VkViewport viewport = {};
         viewport.x = 0.0f;
-        viewport.y = mRenderPass.GetExtent().height;
+        viewport.y = 0.0f;//mRenderPass.GetExtent().height;
         viewport.width = static_cast<float>(mRenderPass.GetExtent().width);
-        viewport.height = -static_cast<float>(mRenderPass.GetExtent().height);
+        viewport.height = static_cast<float>(mRenderPass.GetExtent().height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         VkRect2D scissor = {};

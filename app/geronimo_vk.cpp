@@ -45,9 +45,10 @@ int main(int argc, char** argv)
 	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 	camera->mZNear = 0.1f;
 	camera->mZFar = 100.0f;
-	camera->SetPosition({15, 3,0});
+	camera->SetPosition({20, 10,20});
 	camera->LookTo({ 0,0,0 });
-	/////////////Create the game objects
+	///////////Create the game objects
+	//components::CameraTest* camera = new components::CameraTest();
 	components::Renderable* myBagulho = new components::Renderable("myBagulho", *bagulhoMesh);
 	myBagulho->SetPosition({ 0,0,0 });
 	visibleObjects.push_back(myBagulho);
@@ -94,13 +95,13 @@ int main(int argc, char** argv)
 		//recreate them
 		mainRenderPass.Recreate();
 		phongPipeline->Recreate();
-		camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
+		//camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 		commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 		};
 	////////////OnRender
 	size_t currentFrameId = 0;
 	window.OnRender = [&currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass, 
-		&phongPipeline, &syncService, &camera, &OnResize]
+		&phongPipeline, &syncService, &OnResize, &camera]
 	(app::Window* wnd) {
 		//TODO vulkan: do the rendering loop
 		//begin the frame
@@ -120,7 +121,7 @@ int main(int argc, char** argv)
 		for (auto& renderable : visibleObjects) {
 			camera->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
 			renderable->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
-			phongPipeline->Draw(*renderable, frame.CommandBuffer());
+			phongPipeline->Draw(*renderable, frame.CommandBuffer()) ;
 
 		}		
 		//end the render pass
