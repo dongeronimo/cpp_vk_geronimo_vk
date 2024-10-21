@@ -20,7 +20,7 @@ namespace components
         //update mCameraData
         glm::mat4 projection = glm::perspective(mFOV, mRatio, mZNear, mZFar);
         //GOTCHA: GLM is for opengl, the y coords are inverted. With this trick we the correct that
-        projection[1][1] *= -1;
+        //projection[1][1] *= -1;
         // View matrix
         glm::mat4 rotationMatrix = glm::toMat4(mOrientation);
         glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), - mPosition);

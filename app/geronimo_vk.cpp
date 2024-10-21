@@ -45,27 +45,27 @@ int main(int argc, char** argv)
 	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 	camera->mZNear = 0.1f;
 	camera->mZFar = 100.0f;
-	camera->mPosition = { 10, 5,0};
+	camera->SetPosition({15, 3,0});
 	camera->LookTo({ 0,0,0 });
 	/////////////Create the game objects
 	components::Renderable* myBagulho = new components::Renderable("myBagulho", *bagulhoMesh);
-	myBagulho->mPosition = { 0,0,0 };
+	myBagulho->SetPosition({ 0,0,0 });
 	visibleObjects.push_back(myBagulho);
 
 	components::Renderable* mySphere = new components::Renderable("mySphere", *sphereMesh);
-	mySphere->mPosition = { 0, -4, 0 };
+	mySphere->SetPosition({ 0, -4, 0 });
 	visibleObjects.push_back(mySphere);
 
 	components::Renderable* myMonkey = new components::Renderable("myMonkey", *monkeyMesh);
-	myMonkey->mPosition = { 0,4,0 };
+	myMonkey->SetPosition({ 0,4,0 });
 	visibleObjects.push_back(myMonkey);
 
 	components::Renderable* myBox = new components::Renderable("MyBox", *boxMesh);
-	myBox->mPosition = { 4,0,0 };
+	myBox->SetPosition({ 4,0,0 });
 	visibleObjects.push_back(myBox);
 
 	components::Renderable* myBox2 = new components::Renderable("MyBox2", *boxMesh);
-	myBox2->mPosition = { -4,0,0 };
+	myBox2->SetPosition({ -4,0,0 });
 	myBox2->LookTo({ 100,100,0 });
 	visibleObjects.push_back(myBox2);
 

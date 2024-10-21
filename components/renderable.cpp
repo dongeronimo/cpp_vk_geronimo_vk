@@ -31,7 +31,7 @@ namespace components {
         //update model matrix
         glm::mat4 rotationMatrix = glm::toMat4(mOrientation);
         glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), -mPosition);
-        glm::mat4 model = rotationMatrix * translationMatrix;
+        glm::mat4 model = translationMatrix * rotationMatrix;
         mModelData.model = model;
 
         ModelMatrixUniform::Set(currentFrame, pipeline, cmdBuffer);

@@ -11,7 +11,10 @@ namespace components
     public:
         Transform(const std::string& n):
             mName(n), mId(gTransformCounter),
-            mPosition({0,0,0}), mOrientation(glm::quat())
+            mPosition({0,0,0}), 
+            mOrientation(
+                glm::quat()
+            )
         {
             gTransformCounter++;
         }
@@ -20,12 +23,21 @@ namespace components
         /// </summary>
         /// <param name="target"></param>
         void LookTo(glm::vec3 target) {
+            target.y = -target.y;
             glm::mat4 lookAtMat = glm::lookAt(mPosition, target, V_UP);
             mOrientation = glm::toQuat(lookAtMat);
         }
-        glm::vec3 mPosition;
+        void SetPosition(glm::vec3 v) {
+           v.y = -v.y;
+           /*            float _x = v.x;
+            v.x = v.z;
+            v.z = _x;*/
+            mPosition = v;
+        }
         glm::quat mOrientation;
         const std::string& mName;
         const uint32_t mId;
+    protected:
+        glm::vec3 mPosition;
     };
 }
