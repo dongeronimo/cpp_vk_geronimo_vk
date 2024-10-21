@@ -13,6 +13,8 @@
 #include "components/camera.h"
 #include "components/renderable.h"
 #include "vk/swap_chain.h"
+
+std::vector<components::Renderable*> visibleObjects;
 int main(int argc, char** argv)
 {
 	app::Window window(SCREEN_WIDTH, SCREEN_HEIGH);
@@ -31,7 +33,12 @@ int main(int argc, char** argv)
 	///////////////load meshes
 	auto boxMeshData = io::LoadMeshes("box.glb");
 	components::Mesh* boxMesh = new components::Mesh(boxMeshData[0]);//there can be many meshes per file, i know that in this file there's only one.
-	size_t currentFrameId = 0;
+	auto bagulhoMeshData = io::LoadMeshes("bagulho.glb");
+	components::Mesh* bagulhoMesh = new components::Mesh(bagulhoMeshData[0]);
+	auto monkeyMeshData = io::LoadMeshes("monkey.glb");
+	components::Mesh* monkeyMesh = new components::Mesh(monkeyMeshData[0]);
+	auto sphereMeshData = io::LoadMeshes("sphere.glb");
+	components::Mesh* sphereMesh = new components::Mesh(sphereMeshData[0]);
 	//////////////Create the camera
 	components::Camera* camera = new components::Camera("mainCamera");
 	camera->mFOV = glm::radians(60.0f);
@@ -41,13 +48,28 @@ int main(int argc, char** argv)
 	camera->mPosition = { 10, 5,0};
 	camera->LookTo({ 0,0,0 });
 	/////////////Create the game objects
+	components::Renderable* myBagulho = new components::Renderable("myBagulho", *bagulhoMesh);
+	myBagulho->mPosition = { 0,0,0 };
+	visibleObjects.push_back(myBagulho);
+
+	components::Renderable* mySphere = new components::Renderable("mySphere", *sphereMesh);
+	mySphere->mPosition = { 0, -4, 0 };
+	visibleObjects.push_back(mySphere);
+
+	components::Renderable* myMonkey = new components::Renderable("myMonkey", *monkeyMesh);
+	myMonkey->mPosition = { 0,4,0 };
+	visibleObjects.push_back(myMonkey);
+
 	components::Renderable* myBox = new components::Renderable("MyBox", *boxMesh);
-	myBox->mPosition = { 0,0,0 };
-	myBox->LookTo({ 1,1,0 });
+	myBox->mPosition = { 4,0,0 };
+	visibleObjects.push_back(myBox);
 
 	components::Renderable* myBox2 = new components::Renderable("MyBox2", *boxMesh);
-	myBox2->mPosition = { 5,0,0 };
-	myBox2->LookTo({ 1,0,0 });
+	myBox2->mPosition = { -4,0,0 };
+	myBox2->LookTo({ 100,100,0 });
+	visibleObjects.push_back(myBox2);
+
+
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize
@@ -76,8 +98,9 @@ int main(int argc, char** argv)
 		commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 		};
 	////////////OnRender
+	size_t currentFrameId = 0;
 	window.OnRender = [&currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass, 
-		&phongPipeline, &syncService, &camera, &myBox,&myBox2, &OnResize]
+		&phongPipeline, &syncService, &camera, &OnResize]
 	(app::Window* wnd) {
 		//TODO vulkan: do the rendering loop
 		//begin the frame
@@ -94,15 +117,12 @@ int main(int argc, char** argv)
 		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		//activate pipelines that use the render pass
 		phongPipeline->Bind(frame.CommandBuffer(), currentFrameId);
+		for (auto& renderable : visibleObjects) {
+			camera->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
+			renderable->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
+			phongPipeline->Draw(*renderable, frame.CommandBuffer());
 
-		camera->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
-		myBox->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
-		phongPipeline->Draw(*myBox, frame.CommandBuffer());
-		myBox2->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
-		phongPipeline->Draw(*myBox2, frame.CommandBuffer());
-		//TODO vulkan: draw meshes
-
-		
+		}		
 		//end the render pass
 		mainRenderPass.EndRenderPass(frame.CommandBuffer());
 		//end the frame
