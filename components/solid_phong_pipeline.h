@@ -33,7 +33,7 @@ namespace components
 
     class SolidPhongPipeline : public vk::Pipeline {
     public:
-        SolidPhongPipeline(const vk::RenderPass& rp);
+        SolidPhongPipeline(const std::string& name, const vk::RenderPass& rp, VkSampler phongTextureSampler, VkImageView textureImageView);
         ~SolidPhongPipeline();
         void Bind(VkCommandBuffer buffer, uint32_t currentFrame) override;
         friend class CameraUniform;
@@ -42,30 +42,28 @@ namespace components
     private:
         std::vector<VkVertexInputAttributeDescription> AttributeDescription();
         VkVertexInputBindingDescription BindingDescription();
-        
+        //camera things
         ring_buffer_t<VkBuffer> mCameraBuffer;
         ring_buffer_t<VkDeviceMemory> mCameraBufferMemory;
         ring_buffer_t<VkDescriptorSet> mCameraDescriptorSet;
-
+        //model things
         ring_buffer_t<VkBuffer> mModelBuffer;
         ring_buffer_t<VkDeviceMemory> mModelBufferMemory;
         ring_buffer_t<VkDescriptorSet> mModelDescriptorSet;
+        //phong texture sampler things
+        VkSampler mPhongTextureSampler;
+        VkDescriptorSet mPhongTextureSamplerDescriptorSet;
 
-            
+
         void CreateDescriptorSetLayout();
         void CreateDescriptorPool();
         void CreateCameraBuffer();
-        void CreateDescriptorSet();
+        void CreateDescriptorSet(VkImageView textureImageView);
         void CreatePipelineLayout();
         void CreateModelBuffer();
+
         VkShaderModule mVertexShader, mFragmentShader;
         //VkRingBuffer<CameraUniformBuffer> mCameraBuffer;
-        /////////////////////OLD        
-        //ring_buffer_t<VkDescriptorSet> mDescriptorSets;
-        //VkRingBuffer<CameraUniformBuffer> mCameraBuffer;
-        //VkRingBuffer<LightSpaceMatrixUniformBuffer> mLightSpaceMatrixBuffer;
-        //VkRingBuffer<LightPositionUniformBuffer> mLightPositionBuffer;
-        //VkDynamicOffsetBuffer<ModelUniformBuffer, MAX_NUMBER_OF_OBJS> mModelUniformBuffer;
-        //VkDynamicOffsetBuffer<MaterialUniformBuffer, MAX_NUMBER_OF_OBJS> mMaterialUniformBuffer;
+
     };
 }

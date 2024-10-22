@@ -128,15 +128,16 @@ namespace components
             throw std::runtime_error("failed to create graphics pipeline!");
         }
     }
-    SolidPhongPipeline::SolidPhongPipeline(const vk::RenderPass& rp)
-        :vk::Pipeline("SolidPhongPipeline", rp)
+    
+    SolidPhongPipeline::SolidPhongPipeline(const std::string& name, const vk::RenderPass& rp, VkSampler phongTextureSampler, VkImageView textureImageView)
+        :vk::Pipeline(name, rp), mPhongTextureSampler(phongTextureSampler)
     {
         const auto device = vk::Device::gDevice->GetDevice();
         CreateDescriptorSetLayout();
         CreateDescriptorPool();
         CreateCameraBuffer();
         CreateModelBuffer();
-        CreateDescriptorSet();
+        CreateDescriptorSet(textureImageView);
         CreatePipelineLayout();
         ////Load the shaders////
         mVertexShader = vk::LoadShaderModule(device, "phong.vert.spv");
@@ -233,15 +234,34 @@ namespace components
         auto n2 = Concatenate(mName, "ModelDescriptorSetLayout");
         SET_NAME(modelDescriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n2.c_str());
         
+        VkDescriptorSetLayoutBinding textureSamplerLayoutBinding{};
+        textureSamplerLayoutBinding.binding = 0;
+        textureSamplerLayoutBinding.descriptorCount = 1;
+        textureSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        textureSamplerLayoutBinding.pImmutableSamplers = nullptr;
+        textureSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutCreateInfo textureSamplerLayoutInfo{};
+        textureSamplerLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        textureSamplerLayoutInfo.bindingCount = 1;
+        textureSamplerLayoutInfo.pBindings = &textureSamplerLayoutBinding;
+        VkDescriptorSetLayout textureBindingDescriptorSetLayout;
+        if (vkCreateDescriptorSetLayout(device, &textureSamplerLayoutInfo, nullptr, &textureBindingDescriptorSetLayout) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create descriptor set layout!");
+        }
+        auto n3 = Concatenate(mName, "TextureSamplerDescriptorSetLayout");
+        SET_NAME(textureBindingDescriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n2.c_str());
+
+        ///ORDER MATTERS! It must follow the set number used in the shader
         mDescriptorSetLayouts.push_back(cameraDescriptorSetLayout);
         mDescriptorSetLayouts.push_back(modelDescriptorSetLayout);
+        mDescriptorSetLayouts.push_back(textureBindingDescriptorSetLayout);
 
     }
 
     void SolidPhongPipeline::CreateDescriptorPool()
     {
         const auto device = vk::Device::gDevice->GetDevice();
-        std::array<VkDescriptorPoolSize, 2> poolSizes;
+        std::array<VkDescriptorPoolSize, 3> poolSizes;
         // Camera - uniform buffer, one per frame
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
@@ -250,12 +270,15 @@ namespace components
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         poolSizes[1].descriptorCount = MAX_FRAMES_IN_FLIGHT; // Adjust this for the number of models
 
+        // Texture Sampler - one sampler
+        poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[2].descriptorCount = 1;
         /////Create the descriptor pool/////
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = 2 * MAX_FRAMES_IN_FLIGHT; // 2 descriptor sets per frame
+        poolInfo.maxSets = 2 * MAX_FRAMES_IN_FLIGHT + 1; // 2 descriptor sets per frame + 1 for the texture sampler
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor pool!");
         }
@@ -274,7 +297,7 @@ namespace components
 
     }
 
-    void SolidPhongPipeline::CreateDescriptorSet()
+    void SolidPhongPipeline::CreateDescriptorSet(VkImageView textureImageView)
     {
         const auto device = vk::Device::gDevice->GetDevice();
         ///Camera descriptor set
@@ -295,10 +318,35 @@ namespace components
         allocInfoModel.descriptorPool = mDescriptorPool;  // Same pool
         allocInfoModel.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
         allocInfoModel.pSetLayouts = layouts.data();  // Layout for model
-
         if (vkAllocateDescriptorSets(device, &allocInfoModel, mModelDescriptorSet.data()) != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate model descriptor sets!");
         }
+
+        //texture sampler set
+        VkDescriptorSetLayout textureSamplerLayout = mDescriptorSetLayouts[2];
+        VkDescriptorSetAllocateInfo allocInfoTextureSampler{};
+        allocInfoTextureSampler.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfoTextureSampler.descriptorPool = mDescriptorPool;
+        allocInfoTextureSampler.descriptorSetCount = 1;
+        allocInfoTextureSampler.pSetLayouts = &textureSamplerLayout;
+        if (vkAllocateDescriptorSets(device, &allocInfoTextureSampler, &mPhongTextureSamplerDescriptorSet) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to allocate mPhongTextureSamplerDescriptorSet descriptor sets!");
+        }
+
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = textureImageView;
+        imageInfo.sampler = mPhongTextureSampler;
+        VkWriteDescriptorSet textureSamplerDescriptorWrite{};
+        textureSamplerDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        textureSamplerDescriptorWrite.dstSet = mPhongTextureSamplerDescriptorSet;
+        textureSamplerDescriptorWrite.dstBinding = 1;
+        textureSamplerDescriptorWrite.dstArrayElement = 0;
+        textureSamplerDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        textureSamplerDescriptorWrite.descriptorCount = 1;
+        textureSamplerDescriptorWrite.pImageInfo = &imageInfo;
+
+
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo cameraBufferInfo{};
             cameraBufferInfo.buffer = mCameraBuffer[i];  // Your camera buffer for each frame

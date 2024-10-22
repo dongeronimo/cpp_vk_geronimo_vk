@@ -17,6 +17,7 @@
 #include <map>
 #include "components/image_table.h"
 #include <algorithm>
+#include "vk/image.h"
 
 components::GpuTextureManager* gGPUTextureManager = nullptr;
 std::vector<components::Renderable*> visibleObjects;
@@ -43,7 +44,11 @@ int main(int argc, char** argv)
 	components::MainRenderPass mainRenderPass;
 	components::ShadowMapRenderPass shadowMapRenderPass(512, 512, mainRenderPass.GetNumberOfSwapChainColorAttachments());
 	//create pipelines
-	components::SolidPhongPipeline* phongPipeline = new components::SolidPhongPipeline(mainRenderPass);
+	components::SolidPhongPipeline* phongBrickPipeline = new components::SolidPhongPipeline(
+		"brick.png_phong_pipeline",
+		mainRenderPass, 
+		vk::MakeLinearRepeat2DSampler("solidPhongTextureSampler"),
+		gGPUTextureManager->GetImageView("brick.png"));
 	//components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline();
 	//create synchronization objects
 	vk::SyncronizationService syncService;
@@ -91,7 +96,7 @@ int main(int argc, char** argv)
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize
-	std::function<void()> OnResize = [&device, &mainRenderPass, &commandBuffers, &phongPipeline, &camera, &window]() {
+	std::function<void()> OnResize = [&device, &mainRenderPass, &commandBuffers, &phongBrickPipeline, &camera, &window]() {
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(window.GetWindow(), &width, &height);
 		while (width == 0 || height == 0) {
@@ -105,20 +110,20 @@ int main(int argc, char** argv)
 		mainRenderPass.DestroyFramebuffers();
 		vkFreeCommandBuffers(device.GetDevice(),
 			device.GetCommandPool(), commandBuffers.size(), commandBuffers.data());
-		phongPipeline->DestroyPipeline();
+		phongBrickPipeline->DestroyPipeline();
 		mainRenderPass.DestroyRenderPass();
 		mainRenderPass.GetSwapChain()->DestroyImageViews();
 		mainRenderPass.GetSwapChain()->DestroySwapChain();
 		//recreate them
 		mainRenderPass.Recreate();
-		phongPipeline->Recreate();
+		phongBrickPipeline->Recreate();
 		//camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 		commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 		};
 	////////////OnRender
 	size_t currentFrameId = 0;
 	window.OnRender = [&currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass, 
-		&phongPipeline, &syncService, &OnResize, &camera]
+		&phongBrickPipeline, &syncService, &OnResize, &camera]
 	(app::Window* wnd) {
 		//TODO vulkan: do the rendering loop
 		//begin the frame
@@ -134,11 +139,11 @@ int main(int argc, char** argv)
 		//shadowMapRenderPass.EndRenderPass(frame.CommandBuffer());
 		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		//activate pipelines that use the render pass
-		phongPipeline->Bind(frame.CommandBuffer(), currentFrameId);
+		phongBrickPipeline->Bind(frame.CommandBuffer(), currentFrameId);
 		for (auto& renderable : visibleObjects) {
-			camera->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
-			renderable->Set(currentFrameId, *phongPipeline, frame.CommandBuffer());
-			phongPipeline->Draw(*renderable, frame.CommandBuffer()) ;
+			camera->Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
+			renderable->Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
+			phongBrickPipeline->Draw(*renderable, frame.CommandBuffer()) ;
 
 		}		
 		//end the render pass
@@ -154,6 +159,6 @@ int main(int argc, char** argv)
 	delete myBox;
 	delete boxMesh;
 	delete camera;
-	delete phongPipeline;
+	delete phongBrickPipeline;
 	return 0;
 }
