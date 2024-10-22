@@ -20,7 +20,7 @@
 #include "vk/image.h"
 
 components::GpuTextureManager* gGPUTextureManager = nullptr;
-std::vector<components::Renderable*> visibleObjects;
+//
 int main(int argc, char** argv)
 {
 	app::Window window(SCREEN_WIDTH, SCREEN_HEIGH);
@@ -44,11 +44,17 @@ int main(int argc, char** argv)
 	components::MainRenderPass mainRenderPass;
 	components::ShadowMapRenderPass shadowMapRenderPass(512, 512, mainRenderPass.GetNumberOfSwapChainColorAttachments());
 	//create pipelines
+	VkSampler linearRepeatSampler = vk::MakeLinearRepeat2DSampler("solidPhongTextureSampler");
 	components::SolidPhongPipeline* phongBrickPipeline = new components::SolidPhongPipeline(
 		"brick.png_phong_pipeline",
 		mainRenderPass, 
-		vk::MakeLinearRepeat2DSampler("solidPhongTextureSampler"),
+		linearRepeatSampler,
 		gGPUTextureManager->GetImageView("brick.png"));
+	components::SolidPhongPipeline* phongBlackBrickPipeline = new components::SolidPhongPipeline(
+		"blackBrick.png_phong_pipeline",
+		mainRenderPass,
+		linearRepeatSampler,
+		gGPUTextureManager->GetImageView("blackBrick.png"));
 	//components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline();
 	//create synchronization objects
 	vk::SyncronizationService syncService;
@@ -73,30 +79,30 @@ int main(int argc, char** argv)
 	//components::CameraTest* camera = new components::CameraTest();
 	components::Renderable* myBagulho = new components::Renderable("myBagulho", *bagulhoMesh);
 	myBagulho->SetPosition({ 0,0,0 });
-	visibleObjects.push_back(myBagulho);
+	phongBrickPipeline->AddRenderable(myBagulho);
 
 	components::Renderable* mySphere = new components::Renderable("mySphere", *sphereMesh);
 	mySphere->SetPosition({ 0, -4, 0 });
-	visibleObjects.push_back(mySphere);
+	phongBrickPipeline->AddRenderable(mySphere);
 
 	components::Renderable* myMonkey = new components::Renderable("myMonkey", *monkeyMesh);
 	myMonkey->SetPosition({ 0,4,0 });
-	visibleObjects.push_back(myMonkey);
+	phongBrickPipeline->AddRenderable(myMonkey);
 
 	components::Renderable* myBox = new components::Renderable("MyBox", *boxMesh);
 	myBox->SetPosition({ 4,0,0 });
-	visibleObjects.push_back(myBox);
+	phongBlackBrickPipeline->AddRenderable(myBox);
 
 	components::Renderable* myBox2 = new components::Renderable("MyBox2", *boxMesh);
 	myBox2->SetPosition({ -4,0,0 });
 	myBox2->LookTo({ 100,100,0 });
-	visibleObjects.push_back(myBox2);
+	phongBlackBrickPipeline->AddRenderable(myBox2);
 
 
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize
-	std::function<void()> OnResize = [&device, &mainRenderPass, &commandBuffers, &phongBrickPipeline, &camera, &window]() {
+	std::function<void()> OnResize = [&device, &mainRenderPass, &commandBuffers, &phongBrickPipeline, &phongBlackBrickPipeline, &camera, &window]() {
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(window.GetWindow(), &width, &height);
 		while (width == 0 || height == 0) {
@@ -111,21 +117,22 @@ int main(int argc, char** argv)
 		vkFreeCommandBuffers(device.GetDevice(),
 			device.GetCommandPool(), commandBuffers.size(), commandBuffers.data());
 		phongBrickPipeline->DestroyPipeline();
+		phongBlackBrickPipeline->DestroyPipeline();
 		mainRenderPass.DestroyRenderPass();
 		mainRenderPass.GetSwapChain()->DestroyImageViews();
 		mainRenderPass.GetSwapChain()->DestroySwapChain();
 		//recreate them
 		mainRenderPass.Recreate();
 		phongBrickPipeline->Recreate();
+		phongBlackBrickPipeline->Recreate();
 		//camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 		commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 		};
 	////////////OnRender
 	size_t currentFrameId = 0;
 	window.OnRender = [&currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass, 
-		&phongBrickPipeline, &syncService, &OnResize, &camera]
+		&phongBrickPipeline, &syncService, &OnResize, &camera, &phongBlackBrickPipeline]
 	(app::Window* wnd) {
-		//TODO vulkan: do the rendering loop
 		//begin the frame
 		vk::Frame frame(commandBuffers,currentFrameId, syncService, *mainRenderPass.GetSwapChain());
 		frame.OnResize = OnResize;
@@ -140,12 +147,23 @@ int main(int argc, char** argv)
 		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		//activate pipelines that use the render pass
 		phongBrickPipeline->Bind(frame.CommandBuffer(), currentFrameId);
-		for (auto& renderable : visibleObjects) {
+		auto& phongBrickObjs = phongBrickPipeline->GetRenderables();
+		for (auto& renderable : phongBrickObjs) {
+			if (renderable == nullptr)
+				continue;
 			camera->Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
 			renderable->Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
 			phongBrickPipeline->Draw(*renderable, frame.CommandBuffer()) ;
-
 		}		
+		phongBlackBrickPipeline->Bind(frame.CommandBuffer(), currentFrameId);
+		auto& phongBlacBrickObjs = phongBlackBrickPipeline->GetRenderables();
+		for (auto& renderable : phongBlacBrickObjs) {
+			if (renderable == nullptr)
+				continue;
+			camera->Set(currentFrameId, *phongBlackBrickPipeline, frame.CommandBuffer());
+			renderable->Set(currentFrameId, *phongBlackBrickPipeline, frame.CommandBuffer());
+			phongBlackBrickPipeline->Draw(*renderable, frame.CommandBuffer());
+		}
 		//end the render pass
 		mainRenderPass.EndRenderPass(frame.CommandBuffer());
 		//end the frame
@@ -156,6 +174,7 @@ int main(int argc, char** argv)
 	window.MainLoop();
 	//beginning shutdown
 	syncService.WaitDeviceIdle();
+	delete gGPUTextureManager;
 	delete myBox;
 	delete boxMesh;
 	delete camera;

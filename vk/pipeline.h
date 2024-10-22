@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include "utils/hash.h"
 #include <vector>
+
 namespace components {
     class Renderable;
 }
@@ -40,7 +41,12 @@ namespace vk
         /// <param name="r"></param>
         /// <param name="cmdBuffer"></param>
         virtual void Draw(components::Renderable& r, VkCommandBuffer cmdBuffer);
+
+        void AddRenderable(components::Renderable* r);
+        void RemoveRenderable(components::Renderable* r);
+        const std::vector<components::Renderable*>& GetRenderables() const { return mRenderables; }
     protected:
+        std::vector<components::Renderable*> mRenderables;
         const RenderPass& mRenderPass;
         VkPipeline mPipeline = VK_NULL_HANDLE;
         VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;

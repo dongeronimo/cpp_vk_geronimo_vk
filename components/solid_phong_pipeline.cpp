@@ -161,6 +161,7 @@ namespace components
     void SolidPhongPipeline::Bind(VkCommandBuffer buffer, uint32_t currentFrame)
     {
         Pipeline::Bind(buffer, currentFrame);
+
     }
 
 
@@ -333,18 +334,7 @@ namespace components
             throw std::runtime_error("Failed to allocate mPhongTextureSamplerDescriptorSet descriptor sets!");
         }
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = textureImageView;
-        imageInfo.sampler = mPhongTextureSampler;
-        VkWriteDescriptorSet textureSamplerDescriptorWrite{};
-        textureSamplerDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        textureSamplerDescriptorWrite.dstSet = mPhongTextureSamplerDescriptorSet;
-        textureSamplerDescriptorWrite.dstBinding = 1;
-        textureSamplerDescriptorWrite.dstArrayElement = 0;
-        textureSamplerDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        textureSamplerDescriptorWrite.descriptorCount = 1;
-        textureSamplerDescriptorWrite.pImageInfo = &imageInfo;
+       
 
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -377,7 +367,20 @@ namespace components
             modelDescriptorWrite.descriptorCount = 1;  // One buffer
             modelDescriptorWrite.pBufferInfo = &modelBufferInfo;  // Buffer info
 
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites = { cameraDescriptorWrite, modelDescriptorWrite };
+            VkDescriptorImageInfo textureSamplerImageInfo{};
+            textureSamplerImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            textureSamplerImageInfo.imageView = textureImageView;
+            textureSamplerImageInfo.sampler = mPhongTextureSampler;
+            VkWriteDescriptorSet textureSamplerDescriptorWrite{};
+            textureSamplerDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            textureSamplerDescriptorWrite.dstSet = mPhongTextureSamplerDescriptorSet;
+            textureSamplerDescriptorWrite.dstBinding = 0;
+            textureSamplerDescriptorWrite.dstArrayElement = 0;
+            textureSamplerDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            textureSamplerDescriptorWrite.descriptorCount = 1;
+            textureSamplerDescriptorWrite.pImageInfo = &textureSamplerImageInfo;
+
+            std::array<VkWriteDescriptorSet, 3> descriptorWrites = { cameraDescriptorWrite, modelDescriptorWrite, textureSamplerDescriptorWrite };
             // Perform the update
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
@@ -464,6 +467,14 @@ namespace components
             &phong.mModelDescriptorSet[currentFrame], 
             1, //number of dynamic offsets
             &offset); //dynamic offset
+
+        //bind the texture sampler at set 2
+        vkCmdBindDescriptorSets(cmdBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            phong.mPipelineLayout,
+            2, //Sampler is in set 2 
+            1,
+            &phong.mPhongTextureSamplerDescriptorSet, 0, nullptr);
     }
 
 }

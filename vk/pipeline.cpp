@@ -13,6 +13,7 @@ vk::Pipeline::Pipeline(const std::string name, const RenderPass& rp):
     mName(name), mHash(utils::Hash(name)), mRenderPass(rp)
 {
     assert(name.size() > 0); //we need a name
+    mRenderables.resize(MAX_NUMBER_OF_OBJS, nullptr);
 }
 void vk::Pipeline::Bind(VkCommandBuffer buffer, uint32_t currentFrame)
 {
@@ -70,5 +71,17 @@ void vk::Pipeline::Draw(components::Renderable& r, VkCommandBuffer cmdBuffer)
         0,
         0,
         0);
+
     vk::EndMark(cmdBuffer);
+}
+
+void vk::Pipeline::AddRenderable(components::Renderable* r)
+{
+    mRenderables[r->mModelId] = r;
+    
+}
+
+void vk::Pipeline::RemoveRenderable(components::Renderable* r)
+{
+    mRenderables[r->mModelId] = nullptr;
 }

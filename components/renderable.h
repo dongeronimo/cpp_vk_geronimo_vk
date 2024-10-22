@@ -12,6 +12,8 @@ namespace components
             const vk::Pipeline& pipeline,
             VkCommandBuffer cmdBuffer) override;
         const Mesh& mMesh;
+    private: 
+        static uint32_t gRenderableCounter;
     };
 
 }
