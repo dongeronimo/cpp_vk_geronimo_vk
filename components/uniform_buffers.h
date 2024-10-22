@@ -16,6 +16,7 @@ namespace components
         alignas(16) glm::mat4 lightMatrix;
     };
 
+
     struct alignas(16) MaterialUniformBuffer {
         alignas(16) glm::vec3 ambient;
         alignas(16) glm::vec3 diffuse;

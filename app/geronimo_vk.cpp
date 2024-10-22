@@ -13,7 +13,12 @@
 #include "components/camera.h"
 #include "components/renderable.h"
 #include "vk/swap_chain.h"
+#include "io/image-load.h"
+#include <map>
+#include "components/image_table.h"
+#include <algorithm>
 
+components::GpuTextureManager* gGPUTextureManager = nullptr;
 std::vector<components::Renderable*> visibleObjects;
 int main(int argc, char** argv)
 {
@@ -22,6 +27,18 @@ int main(int argc, char** argv)
 	vk::Instance instance(window.GetWindow());
 	instance.ChoosePhysicalDevice(VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU, vk::YES);
 	vk::Device device(instance.GetPhysicalDevice(), instance.GetInstance(), instance.GetSurface(), vk::GetValidationLayerNames());
+	//////////////Texture load//////////////////////
+	std::map<std::string, io::ImageData*> imageDataTable;
+	imageDataTable.insert({ "floor01.jpg", io::LoadImage("floor01.jpg") });
+	imageDataTable.insert({ "blackBrick.png", io::LoadImage("blackBrick.png") });
+	imageDataTable.insert({ "brick.png", io::LoadImage("brick.png") });
+	std::vector<io::ImageData*> texData(imageDataTable.size());
+	std::transform(imageDataTable.begin(), imageDataTable.end(), texData.begin(),
+		[](auto& x) {
+			return x.second;
+		});
+	gGPUTextureManager = new components::GpuTextureManager(texData);
+	
 	//////////////create render passes//////////////
 	components::MainRenderPass mainRenderPass;
 	components::ShadowMapRenderPass shadowMapRenderPass(512, 512, mainRenderPass.GetNumberOfSwapChainColorAttachments());
