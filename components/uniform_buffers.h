@@ -23,6 +23,10 @@ namespace components
         alignas(16) glm::vec4 colorAndIntensity[16];
     };
 
+    struct alignas(16) PhongMaterialUniformBuffer {
+        alignas(16) glm::vec4 diffuseColorAndIntensity;
+        alignas(16) glm::vec4 specularColorAndIntensity;
+    };
 /*    struct alignas(16) MaterialUniformBuffer {
         alignas(16) glm::vec3 ambient;
         alignas(16) glm::vec3 diffuse;

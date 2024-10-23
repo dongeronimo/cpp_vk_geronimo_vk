@@ -79,22 +79,27 @@ int main(int argc, char** argv)
 	//components::CameraTest* camera = new components::CameraTest();
 	components::Renderable* myBagulho = new components::Renderable("myBagulho", *bagulhoMesh);
 	myBagulho->SetPosition({ 0,0,0 });
+	myBagulho->mMaterial.SetDiffuseColor({ 1,0,0 }, 1);
 	phongBrickPipeline->AddRenderable(myBagulho);
 
 	components::Renderable* mySphere = new components::Renderable("mySphere", *sphereMesh);
 	mySphere->SetPosition({ 0, -4, 0 });
+	myBagulho->mMaterial.SetDiffuseColor({ 1,1,0 }, 1);
 	phongBrickPipeline->AddRenderable(mySphere);
 
 	components::Renderable* myMonkey = new components::Renderable("myMonkey", *monkeyMesh);
 	myMonkey->SetPosition({ 0,4,0 });
+	myMonkey->mMaterial.SetDiffuseColor({ 1,0,1 }, 1);
 	phongBrickPipeline->AddRenderable(myMonkey);
 
 	components::Renderable* myBox = new components::Renderable("MyBox", *boxMesh);
 	myBox->SetPosition({ 4,0,0 });
+	myBox->mMaterial.SetDiffuseColor({ 0,1,0 },1);
 	phongBlackBrickPipeline->AddRenderable(myBox);
 
 	components::Renderable* myBox2 = new components::Renderable("MyBox2", *boxMesh);
 	myBox2->SetPosition({ -4,0,0 });
+	myBox2->mMaterial.SetDiffuseColor({ 0,0,1 }, 1);
 	myBox2->LookTo({ 100,100,0 });
 	phongBlackBrickPipeline->AddRenderable(myBox2);
 
@@ -161,8 +166,9 @@ int main(int argc, char** argv)
 		for (auto& renderable : phongBrickObjs) {
 			if (renderable == nullptr)
 				continue;
+			renderable->mMaterial.Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
 			renderable->Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
-			phongBrickPipeline->Draw(*renderable, frame.CommandBuffer()) ;
+			phongBrickPipeline->Draw(*renderable, frame.CommandBuffer(), currentFrameId) ;
 		}		
 
 		camera->Set(currentFrameId, *phongBlackBrickPipeline, frame.CommandBuffer());
@@ -172,8 +178,9 @@ int main(int argc, char** argv)
 		for (auto& renderable : phongBlacBrickObjs) {
 			if (renderable == nullptr)
 				continue;
+			renderable->mMaterial.Set(currentFrameId, *phongBlackBrickPipeline, frame.CommandBuffer());
 			renderable->Set(currentFrameId, *phongBlackBrickPipeline, frame.CommandBuffer());
-			phongBlackBrickPipeline->Draw(*renderable, frame.CommandBuffer());
+			phongBlackBrickPipeline->Draw(*renderable, frame.CommandBuffer(), currentFrameId);
 		}
 		//end the render pass
 		mainRenderPass.EndRenderPass(frame.CommandBuffer());

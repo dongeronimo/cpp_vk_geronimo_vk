@@ -4,6 +4,7 @@
 #include "solid_phong_pipeline.h"
 namespace components
 {
+
     class Renderable : public Transform, public ModelMatrixUniform {
     public:
         Renderable(const std::string& n, Mesh& mesh);
@@ -12,6 +13,7 @@ namespace components
             const vk::Pipeline& pipeline,
             VkCommandBuffer cmdBuffer) override;
         const Mesh& mMesh;
+        PhongMaterialUniform mMaterial;
     private: 
         static uint32_t gRenderableCounter;
     };

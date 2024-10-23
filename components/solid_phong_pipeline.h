@@ -11,6 +11,7 @@ namespace vk {
 }
 namespace components
 {
+    class PhongMaterialUniform;
     class PointLightsUniform;
     class CameraUniform : public vk::Uniform {
     public:
@@ -37,11 +38,14 @@ namespace components
         SolidPhongPipeline(const std::string& name, const vk::RenderPass& rp, VkSampler phongTextureSampler, VkImageView textureImageView);
         ~SolidPhongPipeline();
         void Bind(VkCommandBuffer buffer, uint32_t currentFrame) override;
+        void Draw(components::Renderable& r, VkCommandBuffer cmdBuffer, uint32_t currentFrame) override;
         friend class CameraUniform;
         friend class ModelMatrixUniform;
         friend class PointLightsUniform;
+        friend class PhongMaterialUniform;
         void Recreate();
     private:
+        //TODO memory: merge all device memories into a single big one to save allocations
         std::vector<VkVertexInputAttributeDescription> AttributeDescription();
         VkVertexInputBindingDescription BindingDescription();
         //camera things
@@ -58,7 +62,9 @@ namespace components
         //point lights - don't have their own descriptor set because they are in the same set that camera is
         ring_buffer_t<VkBuffer> mPointLightsBuffer;
         ring_buffer_t<VkDeviceMemory> mPointLightsMemory;
-
+        //Phong material
+        ring_buffer_t<VkBuffer> mPhongBuffer;
+        ring_buffer_t<VkDeviceMemory> mPhongMemory;
         void CreateDescriptorSetLayout();
         void CreateDescriptorPool();
         void CreateCameraBuffer();
@@ -70,5 +76,22 @@ namespace components
         VkShaderModule mVertexShader, mFragmentShader;
         //VkRingBuffer<CameraUniformBuffer> mCameraBuffer;
 
+    };
+    
+    class PhongMaterialUniform : public vk::Uniform {
+    public:
+        PhongMaterialUniform(uint32_t modelId);
+        virtual void Set(uint32_t currentFrame,
+            const vk::Pipeline& pipeline,
+            VkCommandBuffer cmdBuffer);
+        void SetDiffuseColor(glm::vec3 color, float intensity) {
+            mMaterial.diffuseColorAndIntensity = glm::vec4(color, intensity);
+        }
+        void SetSpecularColor(glm::vec3 color, float intensity) {
+            mMaterial.specularColorAndIntensity = glm::vec4(color, intensity);
+        }
+    private:
+        const uint32_t mModelId;
+        components::PhongMaterialUniformBuffer mMaterial;
     };
 }

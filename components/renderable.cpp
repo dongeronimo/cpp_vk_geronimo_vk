@@ -15,8 +15,9 @@ uint32_t GetAvailableModelId() {
 
 namespace components {
     Renderable::Renderable(const std::string& n, Mesh& mesh)
-        :Transform(n), mMesh(mesh), 
-        components::ModelMatrixUniform(GetAvailableModelId())
+        :Transform(n), mMesh(mesh),
+        components::ModelMatrixUniform(GetAvailableModelId()), 
+        mMaterial(mModelId)
     {
         //take the position
         gAvailableModelIDs[mModelId] = model_id_used;
