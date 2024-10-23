@@ -15,8 +15,19 @@ namespace components
     struct alignas(16) LightSpaceMatrixUniformBuffer {
         alignas(16) glm::mat4 lightMatrix;
     };
+    /// <summary>
+    /// Up to 16 point lights
+    /// </summary>
+    struct alignas(16) PointLightsUniformBuffer {
+        alignas(16) glm::vec4 positions[16];
+        alignas(16) glm::vec4 colorAndIntensity[16];
+    };
 
-    struct alignas(16) MaterialUniformBuffer {
+    struct alignas(16) PhongMaterialUniformBuffer {
+        alignas(16) glm::vec4 diffuseColorAndIntensity;
+        alignas(16) glm::vec4 specularColorAndIntensity;
+    };
+/*    struct alignas(16) MaterialUniformBuffer {
         alignas(16) glm::vec3 ambient;
         alignas(16) glm::vec3 diffuse;
         alignas(16) glm::vec3 specular;
@@ -25,5 +36,5 @@ namespace components
 
     struct alignas(16) LightPositionUniformBuffer {
         alignas(16) glm::vec3 lightPos;
-    };
+    }*/;
 }

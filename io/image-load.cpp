@@ -28,6 +28,7 @@ io::ImageData* io::LoadImage(const std::string& file)
     ImageData* data = new ImageData;
     LoadImage(data->w, data->h, data->pixels, data->size, file);
     assert(data->size != 0);
+    data->name = file;
     return data;
 }
 
