@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 	camera->mZNear = 0.1f;
 	camera->mZFar = 100.0f;
-	camera->SetPosition({20, 10,20});
+	camera->SetPosition({10, 5,10});
 	camera->LookTo({ 0,0,0 });
 	///////////Create the game objects
 	//components::CameraTest* camera = new components::CameraTest();
@@ -99,6 +99,12 @@ int main(int argc, char** argv)
 	phongBlackBrickPipeline->AddRenderable(myBox2);
 
 	gPointLights = new components::PointLightsUniform();
+	gPointLights->SetLightActive(0, true);
+	gPointLights->SetLightColorAndIntensity(0, { 1,1,1 }, 1);
+	gPointLights->SetLightPosition(0, glm::vec3{ 10,0,0 });
+	gPointLights->SetLightActive(1, true);
+	gPointLights->SetLightColorAndIntensity(1, { 0,1,0 }, 2);
+	gPointLights->SetLightPosition(1, glm::vec3{ 10, 5, 10 });
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize

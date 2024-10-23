@@ -25,11 +25,7 @@ void main()
     vec3 norm = normalize(fragNormal);
     for(int i=0; i<16; i++)
     {
-        if(pointLights.isActive[i] == 0)
-        {
-            continue;
-        }
-        else
+        if(pointLights.isActive[i] != 0)
         {
             vec3 lightPos = pointLights.positions[i];
             vec3 lightColour = pointLights.colorAndIntensity[i].xyz;
