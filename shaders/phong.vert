@@ -14,11 +14,6 @@ layout(set=0, binding=0) uniform Camera
     mat4 proj;
     vec3 viewPos;
 } camera;
-layout(set=0, binding=1) uniform PointLights
-{
-    vec3 positions[16];
-    vec4 colorAndIntensity[16];
-} pointLights;
 
 layout(set=1, binding=0) uniform Model
 {

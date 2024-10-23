@@ -99,12 +99,14 @@ int main(int argc, char** argv)
 	phongBlackBrickPipeline->AddRenderable(myBox2);
 
 	gPointLights = new components::PointLightsUniform();
+	
 	gPointLights->SetLightActive(0, true);
 	gPointLights->SetLightColorAndIntensity(0, { 1,1,1 }, 1);
 	gPointLights->SetLightPosition(0, glm::vec3{ 10,0,0 });
+
 	gPointLights->SetLightActive(1, true);
-	gPointLights->SetLightColorAndIntensity(1, { 0,1,0 }, 2);
-	gPointLights->SetLightPosition(1, glm::vec3{ 10, 5, 10 });
+	gPointLights->SetLightColorAndIntensity(1, { 1,1,1 }, 0.5f);
+	gPointLights->SetLightPosition(1, glm::vec3{ 0, 10, 0 });
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize

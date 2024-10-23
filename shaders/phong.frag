@@ -6,11 +6,10 @@ layout(location = 1) in vec3 fragNormal;
 layout(location = 2) in vec2 fragUV0;
 layout(location = 3) in vec3 cameraPos;
 
-layout(set=0, binding=1) uniform PointLights
+layout(std140, set=0, binding=1) uniform PointLights
 {
-    vec3 positions[16];
+    vec4 positions[16];
     vec4 colorAndIntensity[16];
-    uint isActive[16];
 } pointLights;
 
 layout(set = 2, binding = 0) uniform sampler2D texSampler;
@@ -25,9 +24,9 @@ void main()
     vec3 norm = normalize(fragNormal);
     for(int i=0; i<16; i++)
     {
-        if(pointLights.isActive[i] != 0)
+        if(pointLights.positions[i].w > 0)
         {
-            vec3 lightPos = pointLights.positions[i];
+            vec3 lightPos = pointLights.positions[i].xyz;
             vec3 lightColour = pointLights.colorAndIntensity[i].xyz;
             float lightIntensity = pointLights.colorAndIntensity[i].w;
             //from the fragment world coordinates to the light

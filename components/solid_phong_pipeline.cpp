@@ -280,7 +280,7 @@ namespace components
         // Camera and lights - uniform buffer, one per frame. Camera is at binding 0 and point lights at binding 1. 
         //they are in the same set.
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = 2*MAX_FRAMES_IN_FLIGHT;
+        poolSizes[0].descriptorCount = 3*MAX_FRAMES_IN_FLIGHT;
 
         // Model - dynamic buffer, one per frame
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -311,9 +311,15 @@ namespace components
                 mCameraBuffer[i], mCameraBufferMemory[i]);
         }
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            utils::CreateBuffer(sizeof(PointLightsUniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            auto sz = sizeof(PointLightsUniformBuffer);
+            utils::CreateAlignedBuffer(sz, 1,
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 mPointLightsBuffer[i], mPointLightsMemory[i]);
+            //utils::CreateBuffer(sizeof(PointLightsUniformBuffer), 
+            //    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            //    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            //    mPointLightsBuffer[i], mPointLightsMemory[i]);
         }
     }
 
@@ -373,7 +379,8 @@ namespace components
             VkDescriptorBufferInfo pointLightsBufferInfo{};
             pointLightsBufferInfo.buffer = mPointLightsBuffer[i];
             pointLightsBufferInfo.offset = 0;
-            pointLightsBufferInfo.range = sizeof(PointLightsUniformBuffer);
+            pointLightsBufferInfo.range = utils::AlignedSize(
+                sizeof(PointLightsUniformBuffer), 1, vk::Instance::gInstance->GetPhysicalDevice());
             VkWriteDescriptorSet pointLightDescriptorWrite{};
             pointLightDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             pointLightDescriptorWrite.dstSet = mCameraAndPointLightDescriptorSet[i];  // Descriptor set to update
