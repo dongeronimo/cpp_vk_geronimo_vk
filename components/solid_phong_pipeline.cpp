@@ -161,7 +161,12 @@ namespace components
     void SolidPhongPipeline::Bind(VkCommandBuffer buffer, uint32_t currentFrame)
     {
         Pipeline::Bind(buffer, currentFrame);
-
+        vkCmdBindDescriptorSets(buffer, 
+        VK_PIPELINE_BIND_POINT_GRAPHICS, 
+        mPipelineLayout, 
+        0, //set 0 
+        1,
+        &mCameraAndPointLightDescriptorSet[currentFrame], 0, nullptr);
     }
 
 
@@ -322,7 +327,7 @@ namespace components
         allocInfoCamera.descriptorPool = mDescriptorPool;  // Pool created earlier
         allocInfoCamera.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
         allocInfoCamera.pSetLayouts = cameraAndLightsLayout.data();  // Layout for camera
-        if (vkAllocateDescriptorSets(device, &allocInfoCamera, mCameraDescriptorSet.data()) != VK_SUCCESS) {
+        if (vkAllocateDescriptorSets(device, &allocInfoCamera, mCameraAndPointLightDescriptorSet.data()) != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate camera descriptor sets!");
         }
         ///model descriptor set
@@ -358,7 +363,7 @@ namespace components
             cameraBufferInfo.range = sizeof(CameraUniformBuffer);  // Size of the camera data
             VkWriteDescriptorSet cameraDescriptorWrite{};
             cameraDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            cameraDescriptorWrite.dstSet = mCameraDescriptorSet[i];  // Descriptor set to update
+            cameraDescriptorWrite.dstSet = mCameraAndPointLightDescriptorSet[i];  // Descriptor set to update
             cameraDescriptorWrite.dstBinding = 0;  // Binding 0 in the shader (camera and point lights)
             cameraDescriptorWrite.dstArrayElement = 0;  // No array elements
             cameraDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -371,7 +376,7 @@ namespace components
             pointLightsBufferInfo.range = sizeof(PointLightsUniformBuffer);
             VkWriteDescriptorSet pointLightDescriptorWrite{};
             pointLightDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            pointLightDescriptorWrite.dstSet = mCameraDescriptorSet[i];  // Descriptor set to update
+            pointLightDescriptorWrite.dstSet = mCameraAndPointLightDescriptorSet[i];  // Descriptor set to update
             pointLightDescriptorWrite.dstBinding = 1;  // Binding 0 in the shader (camera and point lights)
             pointLightDescriptorWrite.dstArrayElement = 0;  // No array elements
             pointLightDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -456,13 +461,14 @@ namespace components
             0, sizeof(CameraUniformBuffer), 0, &data);
         memcpy(data, &mCameraData, sizeof(CameraUniformBuffer));
         vkUnmapMemory(device, phong.mCameraBufferMemory[currentFrame]);
-        //bind camera descriptor set
-        vkCmdBindDescriptorSets(cmdBuffer, 
-            VK_PIPELINE_BIND_POINT_GRAPHICS, 
-            phong.mPipelineLayout, 
-            0, //set 0 
-            1,
-            &phong.mCameraDescriptorSet[currentFrame], 0, nullptr);
+        ////CANT BIND IT HERE BECAUSE IT'S SHARED WITH POINT LIGHT UNIFORM
+        ////bind camera descriptor set
+        //vkCmdBindDescriptorSets(cmdBuffer, 
+        //    VK_PIPELINE_BIND_POINT_GRAPHICS, 
+        //    phong.mPipelineLayout, 
+        //    0, //set 0 
+        //    1,
+        //    &phong.mCameraDescriptorSet[currentFrame], 0, nullptr);
     }
 
     void ModelMatrixUniform::Set(uint32_t currentFrame, 

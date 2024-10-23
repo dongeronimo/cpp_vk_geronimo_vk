@@ -11,6 +11,7 @@ namespace vk {
 }
 namespace components
 {
+    class PointLightsUniform;
     class CameraUniform : public vk::Uniform {
     public:
         CameraUniformBuffer mCameraData;
@@ -38,6 +39,7 @@ namespace components
         void Bind(VkCommandBuffer buffer, uint32_t currentFrame) override;
         friend class CameraUniform;
         friend class ModelMatrixUniform;
+        friend class PointLightsUniform;
         void Recreate();
     private:
         std::vector<VkVertexInputAttributeDescription> AttributeDescription();
@@ -45,7 +47,7 @@ namespace components
         //camera things
         ring_buffer_t<VkBuffer> mCameraBuffer;
         ring_buffer_t<VkDeviceMemory> mCameraBufferMemory;
-        ring_buffer_t<VkDescriptorSet> mCameraDescriptorSet;
+        ring_buffer_t<VkDescriptorSet> mCameraAndPointLightDescriptorSet;
         //model things
         ring_buffer_t<VkBuffer> mModelBuffer;
         ring_buffer_t<VkDeviceMemory> mModelBufferMemory;

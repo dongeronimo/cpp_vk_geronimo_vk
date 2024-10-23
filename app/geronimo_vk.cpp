@@ -18,9 +18,9 @@
 #include "components/image_table.h"
 #include <algorithm>
 #include "vk/image.h"
-
+#include "components/lights.h"
 components::GpuTextureManager* gGPUTextureManager = nullptr;
-//
+components::PointLightsUniform* gPointLights = nullptr;
 int main(int argc, char** argv)
 {
 	app::Window window(SCREEN_WIDTH, SCREEN_HEIGH);
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
 	myBox2->LookTo({ 100,100,0 });
 	phongBlackBrickPipeline->AddRenderable(myBox2);
 
-
+	gPointLights = new components::PointLightsUniform();
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize
@@ -146,21 +146,24 @@ int main(int argc, char** argv)
 		//shadowMapRenderPass.EndRenderPass(frame.CommandBuffer());
 		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		//activate pipelines that use the render pass
+		camera->Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
+		gPointLights->Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
 		phongBrickPipeline->Bind(frame.CommandBuffer(), currentFrameId);
 		auto& phongBrickObjs = phongBrickPipeline->GetRenderables();
 		for (auto& renderable : phongBrickObjs) {
 			if (renderable == nullptr)
 				continue;
-			camera->Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
 			renderable->Set(currentFrameId, *phongBrickPipeline, frame.CommandBuffer());
 			phongBrickPipeline->Draw(*renderable, frame.CommandBuffer()) ;
 		}		
+
+		camera->Set(currentFrameId, *phongBlackBrickPipeline, frame.CommandBuffer());
+		gPointLights->Set(currentFrameId, *phongBlackBrickPipeline, frame.CommandBuffer());
 		phongBlackBrickPipeline->Bind(frame.CommandBuffer(), currentFrameId);
 		auto& phongBlacBrickObjs = phongBlackBrickPipeline->GetRenderables();
 		for (auto& renderable : phongBlacBrickObjs) {
 			if (renderable == nullptr)
 				continue;
-			camera->Set(currentFrameId, *phongBlackBrickPipeline, frame.CommandBuffer());
 			renderable->Set(currentFrameId, *phongBlackBrickPipeline, frame.CommandBuffer());
 			phongBlackBrickPipeline->Draw(*renderable, frame.CommandBuffer());
 		}
