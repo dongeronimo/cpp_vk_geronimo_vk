@@ -53,7 +53,9 @@ namespace components
         //phong texture sampler things
         VkSampler mPhongTextureSampler;
         VkDescriptorSet mPhongTextureSamplerDescriptorSet;
-
+        //point lights - don't have their own descriptor set because they are in the same set that camera is
+        ring_buffer_t<VkBuffer> mPointLightsBuffer;
+        ring_buffer_t<VkDeviceMemory> mPointLightsMemory;
 
         void CreateDescriptorSetLayout();
         void CreateDescriptorPool();
@@ -61,6 +63,7 @@ namespace components
         void CreateDescriptorSet(VkImageView textureImageView);
         void CreatePipelineLayout();
         void CreateModelBuffer();
+        void CreatePointLightsBuffer();
 
         VkShaderModule mVertexShader, mFragmentShader;
         //VkRingBuffer<CameraUniformBuffer> mCameraBuffer;

@@ -196,27 +196,36 @@ namespace components
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         return bindingDescription;
     }
-
+    VkDescriptorSetLayout LayoutForCameraAndPointLights() {
+        const auto device = vk::Device::gDevice->GetDevice();
+        VkDescriptorSetLayoutBinding cameraBindings;
+        cameraBindings.binding = 0; // camera is at set=0, binding = 0
+        cameraBindings.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        cameraBindings.descriptorCount = 1;
+        cameraBindings.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        cameraBindings.pImmutableSamplers = nullptr; // Not used
+        VkDescriptorSetLayoutBinding pointLightsBindings;
+        pointLightsBindings.binding = 1; //Point lights are at set=0, binding = 1
+        pointLightsBindings.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        pointLightsBindings.descriptorCount = 1;
+        pointLightsBindings.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pointLightsBindings.pImmutableSamplers = nullptr;
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings{ cameraBindings, pointLightsBindings };
+        VkDescriptorSetLayoutCreateInfo cameraAndLightLayoutInfo{};
+        cameraAndLightLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        cameraAndLightLayoutInfo.bindingCount = bindings.size();
+        cameraAndLightLayoutInfo.pBindings = bindings.data();
+        VkDescriptorSetLayout cameraAndLightDescriptorSetLayout = VK_NULL_HANDLE;
+        vkCreateDescriptorSetLayout(device, &cameraAndLightLayoutInfo, nullptr, &cameraAndLightDescriptorSetLayout);
+        return cameraAndLightDescriptorSetLayout;
+    }
     void SolidPhongPipeline::CreateDescriptorSetLayout()
     {
         const auto device = vk::Device::gDevice->GetDevice();
 
-        VkDescriptorSetLayoutBinding cameraBindings;
-        cameraBindings.binding = 0; // Matches binding 0 in the shader
-        cameraBindings.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        cameraBindings.descriptorCount = 1;
-        cameraBindings.stageFlags = VK_SHADER_STAGE_VERTEX_BIT| VK_SHADER_STAGE_FRAGMENT_BIT;
-        cameraBindings.pImmutableSamplers = nullptr; // Not used
-        VkDescriptorSetLayoutCreateInfo cameralayoutInfo{};
-        cameralayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        cameralayoutInfo.bindingCount = 1; // Only one binding, for the Camera uniform buffer
-        cameralayoutInfo.pBindings = &cameraBindings;
-        VkDescriptorSetLayout cameraDescriptorSetLayout;
-        if (vkCreateDescriptorSetLayout(device, &cameralayoutInfo, nullptr, &cameraDescriptorSetLayout) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create descriptor set layout!");
-        }
-        auto n1 = Concatenate(mName, "CameraDescriptorSetLayout");
-        SET_NAME(cameraDescriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n1.c_str());
+        VkDescriptorSetLayout cameraAndLightDescriptorSetLayout = LayoutForCameraAndPointLights();
+        auto n1 = Concatenate(mName, "CameraAndLightDescriptorSetLayout");
+        SET_NAME(cameraAndLightDescriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n1.c_str());
 
         VkDescriptorSetLayoutBinding modelBindings;
         modelBindings.binding = 0; // Matches binding 0 in the shader
@@ -253,7 +262,7 @@ namespace components
         SET_NAME(textureBindingDescriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n2.c_str());
 
         ///ORDER MATTERS! It must follow the set number used in the shader
-        mDescriptorSetLayouts.push_back(cameraDescriptorSetLayout);
+        mDescriptorSetLayouts.push_back(cameraAndLightDescriptorSetLayout);
         mDescriptorSetLayouts.push_back(modelDescriptorSetLayout);
         mDescriptorSetLayouts.push_back(textureBindingDescriptorSetLayout);
 
@@ -263,9 +272,10 @@ namespace components
     {
         const auto device = vk::Device::gDevice->GetDevice();
         std::array<VkDescriptorPoolSize, 3> poolSizes;
-        // Camera - uniform buffer, one per frame
+        // Camera and lights - uniform buffer, one per frame. Camera is at binding 0 and point lights at binding 1. 
+        //they are in the same set.
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+        poolSizes[0].descriptorCount = 2*MAX_FRAMES_IN_FLIGHT;
 
         // Model - dynamic buffer, one per frame
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -295,19 +305,23 @@ namespace components
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 mCameraBuffer[i], mCameraBufferMemory[i]);
         }
-
+        for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            utils::CreateBuffer(sizeof(PointLightsUniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                mPointLightsBuffer[i], mPointLightsMemory[i]);
+        }
     }
 
     void SolidPhongPipeline::CreateDescriptorSet(VkImageView textureImageView)
     {
         const auto device = vk::Device::gDevice->GetDevice();
-        ///Camera descriptor set
-        std::vector<VkDescriptorSetLayout> cameraLayouts(MAX_FRAMES_IN_FLIGHT, mDescriptorSetLayouts[0]);
+        ///Camera and lightning descriptor set
+        std::vector<VkDescriptorSetLayout> cameraAndLightsLayout(MAX_FRAMES_IN_FLIGHT, mDescriptorSetLayouts[0]);
         VkDescriptorSetAllocateInfo allocInfoCamera{};
         allocInfoCamera.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfoCamera.descriptorPool = mDescriptorPool;  // Pool created earlier
         allocInfoCamera.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
-        allocInfoCamera.pSetLayouts = cameraLayouts.data();  // Layout for camera
+        allocInfoCamera.pSetLayouts = cameraAndLightsLayout.data();  // Layout for camera
         if (vkAllocateDescriptorSets(device, &allocInfoCamera, mCameraDescriptorSet.data()) != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate camera descriptor sets!");
         }
@@ -345,11 +359,24 @@ namespace components
             VkWriteDescriptorSet cameraDescriptorWrite{};
             cameraDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             cameraDescriptorWrite.dstSet = mCameraDescriptorSet[i];  // Descriptor set to update
-            cameraDescriptorWrite.dstBinding = 0;  // Binding 0 in the shader (camera)
+            cameraDescriptorWrite.dstBinding = 0;  // Binding 0 in the shader (camera and point lights)
             cameraDescriptorWrite.dstArrayElement = 0;  // No array elements
             cameraDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             cameraDescriptorWrite.descriptorCount = 1;  // One buffer
             cameraDescriptorWrite.pBufferInfo = &cameraBufferInfo;  // Buffer info
+
+            VkDescriptorBufferInfo pointLightsBufferInfo{};
+            pointLightsBufferInfo.buffer = mPointLightsBuffer[i];
+            pointLightsBufferInfo.offset = 0;
+            pointLightsBufferInfo.range = sizeof(PointLightsUniformBuffer);
+            VkWriteDescriptorSet pointLightDescriptorWrite{};
+            pointLightDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            pointLightDescriptorWrite.dstSet = mCameraDescriptorSet[i];  // Descriptor set to update
+            pointLightDescriptorWrite.dstBinding = 1;  // Binding 0 in the shader (camera and point lights)
+            pointLightDescriptorWrite.dstArrayElement = 0;  // No array elements
+            pointLightDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            pointLightDescriptorWrite.descriptorCount = 1;  // One buffer
+            pointLightDescriptorWrite.pBufferInfo = &pointLightsBufferInfo;  // Buffer info
 
 
             VkDescriptorBufferInfo modelBufferInfo{};
@@ -380,7 +407,8 @@ namespace components
             textureSamplerDescriptorWrite.descriptorCount = 1;
             textureSamplerDescriptorWrite.pImageInfo = &textureSamplerImageInfo;
 
-            std::array<VkWriteDescriptorSet, 3> descriptorWrites = { cameraDescriptorWrite, modelDescriptorWrite, textureSamplerDescriptorWrite };
+            std::array<VkWriteDescriptorSet, 4> descriptorWrites = { cameraDescriptorWrite,pointLightDescriptorWrite,
+                modelDescriptorWrite, textureSamplerDescriptorWrite };
             // Perform the update
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
