@@ -89,7 +89,8 @@ target_include_directories(geronimo_vk_demo PRIVATE ${glm_SOURCE_DIR})
 target_link_libraries(geronimo_vk_demo PRIVATE 
     Vulkan::Vulkan 
     glfw
-    assimp)
+    assimp
+)
 
 target_compile_definitions(geronimo_vk_demo PRIVATE 
     VK_DEBUG_LEVEL=VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT # See VkDebugUtilsMessageSeverityFlagBitsEXT @vulkan_core.h
