@@ -61,6 +61,10 @@ file(GLOB vk_files "vk/*.h" "vk/*.cpp")
 file(GLOB utils_files "utils/*.h" "utils/*.cpp")
 file(GLOB components_files "components/*.h" "components/*.cpp")
 file(GLOB io_files "io/*.h" "io/*.cpp")
+file(GLOB imgui_files "imgui/*.h" "imgui/*.cpp" 
+    "imgui/backends/imgui_impl_vulkan.h" "imgui/backends/imgui_impl_vulkan.cpp"
+    "imgui/backends/imgui_impl_glfw.h" "imgui/backends/imgui_impl_glfw.cpp"
+    "imgui/misc/imgui_stdlib.h" "imgui/misc/imgui_stdlib.cpp")
 
 #####Group them in a nice organization#####
 source_group("app" FILES ${app_files})
@@ -71,6 +75,7 @@ source_group("scripts" FILES ${scripts_files})
 source_group("utils" FILES ${utils_files})
 source_group("components" FILES ${components_files})
 source_group("io" FILES ${io_files})
+source_group("imgui" FILES ${imgui_files})
 #####Create the target#####
 add_executable(geronimo_vk_demo
     ${app_files}
@@ -81,8 +86,9 @@ add_executable(geronimo_vk_demo
     ${utils_files}
     ${components_files}
     ${io_files}
+    ${imgui_files}
 )
-target_include_directories(geronimo_vk_demo PRIVATE .)
+target_include_directories(geronimo_vk_demo PRIVATE . "imgui")
 # Include GLM headers
 target_include_directories(geronimo_vk_demo PRIVATE ${glm_SOURCE_DIR})
 
