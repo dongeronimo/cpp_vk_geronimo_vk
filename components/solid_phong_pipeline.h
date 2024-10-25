@@ -33,7 +33,8 @@ namespace components
         virtual ~ModelMatrixUniform() = default;
     };
 
-    class SolidPhongPipeline : public vk::Pipeline {
+    class SolidPhongPipeline : public vk::Pipeline, 
+        public vk::IModelBufferMemoryAcessor {
     public:
         SolidPhongPipeline(const std::string& name, const vk::RenderPass& rp, VkSampler phongTextureSampler, VkImageView textureImageView);
         ~SolidPhongPipeline();
@@ -44,6 +45,9 @@ namespace components
         friend class PointLightsUniform;
         friend class PhongMaterialUniform;
         void Recreate();
+        const VkDeviceMemory GetModelBufferMemory(uint32_t currentFrame) const override{
+            return mModelBufferMemory[currentFrame];
+        };
     private:
         //TODO memory: merge all device memories into a single big one to save allocations
         std::vector<VkVertexInputAttributeDescription> AttributeDescription();
@@ -94,4 +98,6 @@ namespace components
         const uint32_t mModelId;
         components::PhongMaterialUniformBuffer mMaterial;
     };
+
+
 }

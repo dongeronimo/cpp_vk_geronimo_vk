@@ -17,6 +17,11 @@ namespace vk
             const Pipeline& pipeline,
             VkCommandBuffer cmdBuffer) = 0;
     };
+    class IModelBufferMemoryAcessor {
+    public:
+        virtual ~IModelBufferMemoryAcessor() = default;
+        const virtual VkDeviceMemory GetModelBufferMemory(uint32_t currentFrame) const= 0;
+    };
     class Pipeline
     {
     public:

@@ -19,6 +19,8 @@
 #include <algorithm>
 #include "vk/image.h"
 #include "components/lights.h"
+#include "components/point_light_shadow_map_manager.h"
+components::PointLightShadowMap* gPointLightShadowMap = nullptr;
 components::GpuTextureManager* gGPUTextureManager = nullptr;
 components::PointLightsUniform* gPointLights = nullptr;
 int main(int argc, char** argv)
@@ -42,23 +44,24 @@ int main(int argc, char** argv)
 	
 	//////////////create render passes//////////////
 	components::MainRenderPass mainRenderPass;
-	components::ShadowMapRenderPass shadowMapRenderPass(512, 512, mainRenderPass.GetNumberOfSwapChainColorAttachments());
-	//create pipelines
+	gPointLightShadowMap = new components::PointLightShadowMap(mainRenderPass.GetNumberOfSwapChainColorAttachments());
+	//////////////create pipelines//////////////
 	VkSampler linearRepeatSampler = vk::MakeLinearRepeat2DSampler("solidPhongTextureSampler");
 	components::SolidPhongPipeline* phongBrickPipeline = new components::SolidPhongPipeline(
 		"brick.png_phong_pipeline",
 		mainRenderPass, 
 		linearRepeatSampler,
 		gGPUTextureManager->GetImageView("brick.png"));
-	components::SolidPhongPipeline* phongBlackBrickPipeline = new components::SolidPhongPipeline(
+		components::SolidPhongPipeline* phongBlackBrickPipeline = new components::SolidPhongPipeline(
 		"blackBrick.png_phong_pipeline",
 		mainRenderPass,
 		linearRepeatSampler,
 		gGPUTextureManager->GetImageView("blackBrick.png"));
+	
 	//components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline();
 	//create synchronization objects
 	vk::SyncronizationService syncService;
-	///////////////load meshes
+	///////////////load meshes//////////////
 	auto boxMeshData = io::LoadMeshes("box.glb");
 	components::Mesh* boxMesh = new components::Mesh(boxMeshData[0]);//there can be many meshes per file, i know that in this file there's only one.
 	auto bagulhoMeshData = io::LoadMeshes("bagulho.glb");
@@ -81,27 +84,32 @@ int main(int argc, char** argv)
 	myBagulho->SetPosition({ 0,0,0 });
 	myBagulho->mMaterial.SetDiffuseColor({ 1,0,0 }, 1);
 	phongBrickPipeline->AddRenderable(myBagulho);
+	gPointLightShadowMap->AddRenderable(myBagulho);
 
 	components::Renderable* mySphere = new components::Renderable("mySphere", *sphereMesh);
 	mySphere->SetPosition({ 0, -4, 0 });
-	myBagulho->mMaterial.SetDiffuseColor({ 1,1,0 }, 1);
+	mySphere->mMaterial.SetDiffuseColor({ 1,1,0 }, 1);
 	phongBrickPipeline->AddRenderable(mySphere);
+	gPointLightShadowMap->AddRenderable(mySphere);
 
 	components::Renderable* myMonkey = new components::Renderable("myMonkey", *monkeyMesh);
 	myMonkey->SetPosition({ 0,4,0 });
 	myMonkey->mMaterial.SetDiffuseColor({ 1,0,1 }, 1);
 	phongBrickPipeline->AddRenderable(myMonkey);
+	gPointLightShadowMap->AddRenderable(myMonkey);
 
 	components::Renderable* myBox = new components::Renderable("MyBox", *boxMesh);
 	myBox->SetPosition({ 4,0,0 });
 	myBox->mMaterial.SetDiffuseColor({ 0,1,0 },1);
 	phongBlackBrickPipeline->AddRenderable(myBox);
+	gPointLightShadowMap->AddRenderable(myBox);
 
 	components::Renderable* myBox2 = new components::Renderable("MyBox2", *boxMesh);
 	myBox2->SetPosition({ -4,0,0 });
 	myBox2->mMaterial.SetDiffuseColor({ 0,0,1 }, 1);
 	myBox2->LookTo({ 100,100,0 });
 	phongBlackBrickPipeline->AddRenderable(myBox2);
+	gPointLightShadowMap->AddRenderable(myBox2);
 
 	gPointLights = new components::PointLightsUniform();
 	
@@ -109,9 +117,9 @@ int main(int argc, char** argv)
 	gPointLights->SetLightColorAndIntensity(0, { 1,1,1 }, 1);
 	gPointLights->SetLightPosition(0, glm::vec3{ 10,0,0 });
 
-	gPointLights->SetLightActive(1, true);
-	gPointLights->SetLightColorAndIntensity(1, { 1,1,1 }, 0.5f);
-	gPointLights->SetLightPosition(1, glm::vec3{ 0, 10, 0 });
+	//gPointLights->SetLightActive(1, true);
+	//gPointLights->SetLightColorAndIntensity(1, { 1,1,1 }, 0.5f);
+	//gPointLights->SetLightPosition(1, glm::vec3{ 0, 10, 0 });
 	////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	////////////On Resize
@@ -143,7 +151,7 @@ int main(int argc, char** argv)
 		};
 	////////////OnRender
 	size_t currentFrameId = 0;
-	window.OnRender = [&currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass, 
+	window.OnRender = [&currentFrameId, &commandBuffers, &mainRenderPass, 
 		&phongBrickPipeline, &syncService, &OnResize, &camera, &phongBlackBrickPipeline]
 	(app::Window* wnd) {
 		//begin the frame
@@ -151,6 +159,7 @@ int main(int argc, char** argv)
 		frame.OnResize = OnResize;
 		frame.BeginFrame();
 		//TODO Shadow: activate the render passes
+		gPointLightShadowMap->RenderShadows(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId, gPointLights);
 		//shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.ImageIndex(), currentFrameId);
 		////TODO Shadow: activate pipelines that use the render pass
 		//directionaLightShadowMapPipeline->Bind();

@@ -542,33 +542,23 @@ namespace components
         VkCommandBuffer cmdBuffer)
     {
         assert(mModelId != UINT32_MAX);
+        const auto device = vk::Device::gDevice->GetDevice();
         static VkPhysicalDevice physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
         //get my pipeline
-        const SolidPhongPipeline& phong = dynamic_cast<const SolidPhongPipeline&>(pipeline);
+        const vk::IModelBufferMemoryAcessor& modelBufferAcessor = dynamic_cast<const vk::IModelBufferMemoryAcessor&>(pipeline);
+        
         //map model data and copy to the gpu, mind the offsets and aligned size
-        const auto device = vk::Device::gDevice->GetDevice();
         void* data;
         VkDeviceSize alignedSize = utils::AlignedSize(sizeof(ModelUniformBuffer),
             1, physicalDevice);
         uint32_t offset = alignedSize * mModelId;
         vkMapMemory(device,
-            phong.mModelBufferMemory[currentFrame],
+            modelBufferAcessor.GetModelBufferMemory(currentFrame),
             offset, //offset
             alignedSize, //size
             0, &data);
         memcpy(data, &mModelData, sizeof(ModelUniformBuffer));
-        vkUnmapMemory(device, phong.mModelBufferMemory[currentFrame]);
-        //bind model descriptor set
-        //vkCmdBindDescriptorSets(cmdBuffer,
-        //    VK_PIPELINE_BIND_POINT_GRAPHICS,
-        //    phong.mPipelineLayout,
-        //    1, //set 0 
-        //    1,
-        //    &phong.mModelDescriptorSet[currentFrame],
-        //    1, //number of dynamic offsets
-        //    &offset); //dynamic offset
-
-
+        vkUnmapMemory(device, modelBufferAcessor.GetModelBufferMemory(currentFrame));
     }
 
     void PhongMaterialUniform::Set(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer)

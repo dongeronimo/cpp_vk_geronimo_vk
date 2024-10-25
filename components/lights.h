@@ -19,6 +19,14 @@ namespace components
             glm::vec4 v{ pos, mUniformBufferData.positions[id].w };
             mUniformBufferData.positions[id] = v;
         }
+        glm::vec3 GetLightPosition(uint32_t id)const {
+            assert(id < 16);
+            return mUniformBufferData.positions[id];
+        }
+        bool GetLightActive(uint32_t id) {
+            assert(id < 16);
+            return mUniformBufferData.positions[id].w > 0;
+        }
         void SetLightColorAndIntensity(uint32_t id, glm::vec3 rgb, float intensity) {
             assert(id < 16);
             mUniformBufferData.colorAndIntensity[id] = glm::vec4(rgb, intensity);
