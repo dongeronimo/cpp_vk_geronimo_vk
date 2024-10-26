@@ -17,13 +17,13 @@ namespace components
     }
     void Camera::SetUniform(uint32_t currentFrame,const vk::Pipeline& pipeline,VkCommandBuffer cmdBuffer)
     {
-        //update mCameraData
-        glm::mat4 projection = glm::perspective(mFOV, mRatio, mZNear, mZFar);
+        //update mCameraData 
+        glm::mat4 projection = /*glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 0.001f, 100.f);*/ glm::perspective(mFOV, mRatio, mZNear, mZFar);
         //GOTCHA: GLM is for opengl, the y coords are inverted. With this trick we the correct that
         projection[1][1] *= -1;
         // View matrix
         glm::mat4 rotationMatrix = glm::toMat4(mOrientation);
-        glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), - mPosition);
+        glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), -mPosition);
         glm::mat4 view = rotationMatrix * translationMatrix;
         mCameraData.proj = projection;
         mCameraData.view = view;

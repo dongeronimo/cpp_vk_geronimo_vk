@@ -26,57 +26,12 @@ layout(set = 3, binding = 0) uniform DirectionalLightProperties {
    vec4 colorAndIntensity;
 } directionalLight;
 
-
-mat3 extractRotation(mat4 m) {
-    return mat3(m);
-}
-
-mat4 rotateX(float angle) {
-    float c = cos(angle);
-    float s = sin(angle);
-    return mat4(
-        1.0, 0.0, 0.0, 0.0,
-        0.0, c, -s, 0.0,
-        0.0, s, c, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    );
-}
-
-mat4 rotateY(float angle) {
-    float c = cos(angle);
-    float s = sin(angle);
-    return mat4(
-        c, 0.0, s, 0.0,
-        0.0, 1.0, 0.0, 0.0,
-        -s, 0.0, c, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    );
-}
-
-mat4 rotateZ(float angle) {
-    float c = cos(angle);
-    float s = sin(angle);
-    return mat4(
-        c, -s, 0.0, 0.0,
-        s, c, 0.0, 0.0,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    );
-}
-
-
-
-mat4 rotateXYZ(float angleX, float angleY, float angleZ) {
-    return rotateX(angleX) * rotateY(angleY) * rotateZ(angleZ);
-}
-
 void main() 
 {
     fragPosition = vec3(model.mat * vec4(inPosition, 1.0));
     mat3 normalMatrix = transpose(inverse(mat3(model.mat)));
     fragNormal = normalize( normalMatrix * inNormal );
     fragTexCoord = uv0;
-    mat4 gambi = rotateXYZ(radians(-90),0,0) * directionalLight.lightSpaceMatrix;
-    fragShadowCoord = gambi * vec4(fragPosition, 1.0);
+    fragShadowCoord = directionalLight.lightSpaceMatrix * vec4(fragPosition, 1.0);
     gl_Position = camera.proj * camera.view * vec4(fragPosition, 1.0);
 }
