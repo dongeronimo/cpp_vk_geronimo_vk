@@ -19,9 +19,10 @@ layout(set = 3, binding = 0) uniform DirectionalLightProperties {
 } directionalLight;
 
 float calculateShadow(vec4 fragShadowCoord) {
+    float bias = 0.001; //TODO shadows: use vk's bias infra. This exists due to shadow acne
     vec3 projCoords = fragShadowCoord.xyz / fragShadowCoord.w;
-    projCoords = vec3(projCoords.xy * 0.5 + 0.5, projCoords.z);
-    return texture(shadowMap, vec3(projCoords.xy, projCoords.z));
+    projCoords = vec3(projCoords.xy * 0.5 + 0.5, projCoords.z-bias);
+    return texture(shadowMap, vec3(projCoords.xyz));
 }
 
 void main()
