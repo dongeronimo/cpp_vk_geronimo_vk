@@ -20,10 +20,10 @@ layout(set = 3, binding = 0) uniform DirectionalLightProperties {
 
 float calculateShadow(vec4 fragShadowCoord) {
     vec3 projCoords = fragShadowCoord.xyz / fragShadowCoord.w;
-    projCoords = projCoords * 0.5 + 0.5;
+    projCoords = vec3(projCoords.xy * 0.5 + 0.5, projCoords.z);
     float closestDepthFromLightPOV  = texture(shadowMap, projCoords.st).r;
     float currentDepth = projCoords.z;
-    float shadow = (closestDepthFromLightPOV < currentDepth) ? 1.0 : 0.0;
+    float shadow = (closestDepthFromLightPOV > currentDepth) ? 1.0 : 0.0;
     return shadow;
 }
 

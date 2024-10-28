@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 	components::Mesh* coneMesh = new components::Mesh(coneMeshData[0]);
 	//////////////Create the camera
 	components::Camera* camera = new components::Camera("mainCamera");
-	camera->mFOV = glm::radians(60.0f);
+	camera->mFOV = glm::radians(45.0f);
 	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 	camera->mZNear = 0.01f;
 	camera->mZFar = 100.0f;

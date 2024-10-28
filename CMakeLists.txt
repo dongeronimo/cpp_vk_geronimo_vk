@@ -106,10 +106,10 @@ target_compile_features(geronimo_vk_demo PRIVATE cxx_std_17)
 add_custom_command(
     TARGET geronimo_vk_demo
     POST_BUILD
-    COMMAND "C:/Windows/py.exe" "${CMAKE_SOURCE_DIR}/copy_assets.py" "${CMAKE_SOURCE_DIR}" 
+    COMMAND "C:/Users/luciano.lisboa/AppData/Local/Microsoft/WindowsApps/python3.exe" "${CMAKE_SOURCE_DIR}/copy_assets.py" "${CMAKE_SOURCE_DIR}" 
 )
 add_custom_command(
     TARGET geronimo_vk_demo
     POST_BUILD
-    COMMAND "C:/Windows/py.exe" "${CMAKE_SOURCE_DIR}/compile_shaders.py" "${CMAKE_SOURCE_DIR}" 
+    COMMAND "C:/Users/luciano.lisboa/AppData/Local/Microsoft/WindowsApps/python3.exe" "${CMAKE_SOURCE_DIR}/compile_shaders.py" "${CMAKE_SOURCE_DIR}" 
 )

@@ -2,13 +2,13 @@
 //TODO light: Directional light can't inherit from transform.
 namespace components
 {
-    static glm::vec3 o = { 40,0,0 };
+    static glm::vec3 o = { 20,0,4 };
     static glm::vec3 t = { 0,0,0 };
 
     glm::mat4 DirectionalLight::GetLightMatrix()
     {
         glm::mat4 lightView = glm::lookAt(o, t, V_UP);
-        glm::mat4 lightProj = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 0.1f, 100.f);//TODO light: calculate based on the objects visible on the frustum
+        glm::mat4 lightProj = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 0.01f, 40.0f);//TODO light: calculate based on the objects visible on the frustum
         lightProj[1][1] *= -1;
         glm::mat4 lightMatrix = lightProj * lightView;
         return lightMatrix;

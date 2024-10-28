@@ -21,14 +21,14 @@ os.makedirs(shader_dst_folder, exist_ok=True)
 #compile the shaders
 for vs in vertex_shaders:
     print(f"compiling {vs}")
-    arg = f"C:/VulkanSDK/1.3.268.0/Bin/glslc.exe {shader_src_folder}/{vs} -o {shader_dst_folder}/{vs}.spv"
+    arg = f"C:/VulkanSDK/1.3.283.0/Bin/glslc.exe {shader_src_folder}/{vs} -o {shader_dst_folder}/{vs}.spv"
     print(f">> {arg}");
     command = arg
     result = subprocess.run(command, capture_output=True, text=True)
     print(result.stdout)
 for fs in fragment_shaders:
     print(f"compiling {fs}")
-    arg = f"C:/VulkanSDK/1.3.268.0/Bin/glslc.exe {shader_src_folder}/{fs} -o {shader_dst_folder}/{fs}.spv"
+    arg = f"C:/VulkanSDK/1.3.283.0/Bin/glslc.exe {shader_src_folder}/{fs} -o {shader_dst_folder}/{fs}.spv"
     print(f">> {arg}");
     command = arg
     result = subprocess.run(command, capture_output=True, text=True)
