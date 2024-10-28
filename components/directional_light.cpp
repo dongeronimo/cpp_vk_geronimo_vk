@@ -2,7 +2,7 @@
 //TODO light: Directional light can't inherit from transform.
 namespace components
 {
-    static glm::vec3 o = { 10,0,0 };
+    static glm::vec3 o = { 40,0,0 };
     static glm::vec3 t = { 0,0,0 };
 
     glm::mat4 DirectionalLight::GetLightMatrix()
@@ -33,7 +33,7 @@ namespace components
         const vk::Pipeline& pipeline,
         VkCommandBuffer cmdBuffer)
     {
-        mLightData.direction = t - o;
+        mLightData.direction = glm::normalize(t - o);
         mLightData.lightSpaceMatrix = GetLightMatrix();
         DirectionalLightUniform::SetUniform(currentFrame, pipeline, cmdBuffer);
     }

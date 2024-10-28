@@ -13,29 +13,17 @@ layout(set=1, binding=0) uniform Camera{
 } camera;
 layout(set = 2, binding = 0) uniform sampler2D shadowMap;
 layout(set = 3, binding = 0) uniform DirectionalLightProperties {
-   vec3 test;
    vec3 direction;
    mat4 lightSpaceMatrix;
    vec4 colorAndIntensity;
 } directionalLight;
 
-//float calculateShadow(vec4 fragShadowCoord) {
-// // Perform perspective divide (NDC space)
-//    vec3 projCoords = fragShadowCoord.xyz / fragShadowCoord.w;
-//
-//    // Transform to [0, 1] for texture lookup
-//    projCoords = projCoords * 0.5 + 0.5;
-//
-//    // Perform shadow comparison; returns a value between 0 and 1 based on shadow
-//    return texture(shadowMap, vec3(projCoords.xy, projCoords.z));
-//
-//}
 float calculateShadow(vec4 fragShadowCoord) {
     vec3 projCoords = fragShadowCoord.xyz / fragShadowCoord.w;
     projCoords = projCoords * 0.5 + 0.5;
-    float depthInShadowMap = texture(shadowMap, projCoords.xy).r;
-    float fragmentDepthInLightSpace = projCoords.z;
-    float shadow = fragmentDepthInLightSpace > depthInShadowMap + 0.005 ? 1.0 : 0.1;
+    float closestDepthFromLightPOV  = texture(shadowMap, projCoords.st).r;
+    float currentDepth = projCoords.z;
+    float shadow = (closestDepthFromLightPOV < currentDepth) ? 1.0 : 0.0;
     return shadow;
 }
 
