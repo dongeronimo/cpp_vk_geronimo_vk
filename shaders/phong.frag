@@ -11,7 +11,7 @@ layout(set=1, binding=0) uniform Camera{
     mat4 proj;
     vec3 viewPos;
 } camera;
-layout(set = 2, binding = 0) uniform sampler2D shadowMap;
+layout(set = 2, binding = 0) uniform sampler2DShadow shadowMap;
 layout(set = 3, binding = 0) uniform DirectionalLightProperties {
    vec3 direction;
    mat4 lightSpaceMatrix;
@@ -21,10 +21,7 @@ layout(set = 3, binding = 0) uniform DirectionalLightProperties {
 float calculateShadow(vec4 fragShadowCoord) {
     vec3 projCoords = fragShadowCoord.xyz / fragShadowCoord.w;
     projCoords = vec3(projCoords.xy * 0.5 + 0.5, projCoords.z);
-    float closestDepthFromLightPOV  = texture(shadowMap, projCoords.st).r;
-    float currentDepth = projCoords.z;
-    float shadow = (closestDepthFromLightPOV > currentDepth) ? 1.0 : 0.0;
-    return shadow;
+    return texture(shadowMap, vec3(projCoords.xy, projCoords.z));
 }
 
 void main()
