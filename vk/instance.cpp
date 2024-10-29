@@ -3,6 +3,7 @@
 #include "vk/extensions.h"
 #include <stdexcept>
 #include <cassert>
+#include <utils/concatenate.h>
 namespace vk {
     Instance* Instance::gInstance;
     VkApplicationInfo GetAppInfo() {
@@ -39,6 +40,8 @@ namespace vk {
             vkGetPhysicalDeviceFeatures(device, &features);
             PhysicalDeviceProperties props(properties, features, device);
             mPhysicalDevices.push_back(props);
+            auto txt = Concatenate("Device Name:", properties.deviceName);
+            printf("%s\n", txt.c_str());
         }
     }
     Instance::~Instance()

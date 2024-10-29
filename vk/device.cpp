@@ -72,14 +72,24 @@ namespace vk {
         commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         commandPoolCreateInfo.queueFamilyIndex = mGraphicsQueueFamily;
         if (vkCreateCommandPool(mDevice, 
-            &commandPoolCreateInfo, nullptr, &mCommandPool) != VK_SUCCESS) {
+            &commandPoolCreateInfo, nullptr, &mMainCommandPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create command pool!");
         }
-        SET_NAME(mCommandPool, VK_OBJECT_TYPE_COMMAND_POOL, "MainCommandPool");
+        SET_NAME(mMainCommandPool, VK_OBJECT_TYPE_COMMAND_POOL, "MainCommandPool");
+
+        VkCommandPoolCreateInfo mShortLivedCommandsPoolCreateInfo{};
+        mShortLivedCommandsPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        mShortLivedCommandsPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        mShortLivedCommandsPoolCreateInfo.queueFamilyIndex = mGraphicsQueueFamily;
+        if (vkCreateCommandPool(mDevice,
+            &mShortLivedCommandsPoolCreateInfo, nullptr, &mShortLivedCommandsPool) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create command pool!");
+        }
+        SET_NAME(mShortLivedCommandsPool, VK_OBJECT_TYPE_COMMAND_POOL, "ShortLivedCommandsPool");
     }
     Device::~Device()
     {
-        vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
+        vkDestroyCommandPool(mDevice, mMainCommandPool, nullptr);
         vkDestroyDevice(mDevice, nullptr);
     }
     VkCommandBuffer Device::CreateCommandBuffer(const std::string& name)
@@ -87,7 +97,7 @@ namespace vk {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = mCommandPool;
+        allocInfo.commandPool = mShortLivedCommandsPool;
         allocInfo.commandBufferCount = 1;
         VkCommandBuffer commandBuffer;
         vkAllocateCommandBuffers(mDevice, &allocInfo, &commandBuffer);
@@ -137,7 +147,7 @@ namespace vk {
             1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(mGraphicsQueue);//cpu waits until copy is done
         //free the command buffer
-        vkFreeCommandBuffers(mDevice, mCommandPool, 1, &cmd);
+        vkFreeCommandBuffers(mDevice, mShortLivedCommandsPool, 1, &cmd);
     }
     void Device::CopyBuffer(VkDeviceSize srcOffset, VkDeviceSize dstOffset, VkDeviceSize size, VkCommandBuffer cmd, VkBuffer src, VkBuffer dst)
     {

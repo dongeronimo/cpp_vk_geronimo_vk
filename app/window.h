@@ -34,7 +34,10 @@ namespace app {
         /// Callback called by the window main loop initiated when MainLoop is called.
         /// </summary>
         std::function<void(Window*)> OnRender;
-
+        /// <summary>
+        /// Callback for resize, vulkan needs to recreate everything that depends upon the surface when the surface
+        /// is resized, like the swapchain and the renderpasses that depend upon the swap chain.
+        /// </summary>
         std::function<void()> OnResize;
     private:
         GLFWwindow* mWindow = nullptr;

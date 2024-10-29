@@ -51,10 +51,29 @@ namespace vk {
         /// </summary>
         /// <param name="window"></param>
         Instance(GLFWwindow* window);
+        /// <summary>
+        /// Pointer to the glfw window. 
+        /// TODO multiplatform: that'll have to decoupled from glfw if i try to put it in another platform.
+        /// </summary>
         const GLFWwindow* mWindow;
+        /// <summary>
+        /// Destructor. Has to be the last vulkan object destructor called.
+        /// </summary>
         ~Instance();
+        /// <summary>
+        /// Returns the vkInstance
+        /// </summary>
+        /// <returns></returns>
         VkInstance GetInstance()const { return mInstance; }
+        /// <summary>
+        /// Returns the vkSurface
+        /// </summary>
+        /// <returns></returns>
         VkSurfaceKHR GetSurface()const { return mSurface; }
+        /// <summary>
+        /// Get the physical device. Will crash if called before ChoosePhysicalDevice
+        /// </summary>
+        /// <returns></returns>
         VkPhysicalDevice GetPhysicalDevice()const;
         /// <summary>
         /// Call this after the ctor and before GetPhysicalDevice
@@ -63,10 +82,25 @@ namespace vk {
         /// <param name="samplerAnisotropy"></param>
         void ChoosePhysicalDevice(VkPhysicalDeviceType type, PhysicalDeviceFeatureQueryParam samplerAnisotropy);
     private:
+        /// <summary>
+        /// Which device was chosen?
+        /// </summary>
         uint32_t mChosenDeviceId = UINT32_MAX;
+        /// <summary>
+        /// Table of physical device properties
+        /// </summary>
         std::vector<PhysicalDeviceProperties> mPhysicalDevices;
+        /// <summary>
+        /// vk instance
+        /// </summary>
         VkInstance mInstance = VK_NULL_HANDLE;
+        /// <summary>
+        /// vk debug handler
+        /// </summary>
         VkDebugUtilsMessengerEXT mDebugMessager = VK_NULL_HANDLE;
+        /// <summary>
+        /// vk surface
+        /// </summary>
         VkSurfaceKHR mSurface = VK_NULL_HANDLE;
         void CreateInstance();
     };
