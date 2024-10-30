@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 	//create the device
 	vk::Device device(instance.GetPhysicalDevice(), instance.GetInstance(), instance.GetSurface(), vk::GetValidationLayerNames());
 	////////////////create render passes//////////////
-	//components::MainRenderPass mainRenderPass;
+	components::MainRenderPass mainRenderPass;
 	//components::ShadowMapRenderPass shadowMapRenderPass(DIRECTIONAL_SHADOW_MAP_SIZE, DIRECTIONAL_SHADOW_MAP_SIZE, mainRenderPass.GetNumberOfSwapChainColorAttachments());
 	////create pipelines
 	//components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline(shadowMapRenderPass);
