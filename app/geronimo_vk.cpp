@@ -26,141 +26,147 @@ int main(int argc, char** argv)
 	vk::Device device(instance.GetPhysicalDevice(), instance.GetInstance(), instance.GetSurface(), vk::GetValidationLayerNames());
 	////////////////create render passes//////////////
 	components::MainRenderPass mainRenderPass;
-	//components::ShadowMapRenderPass shadowMapRenderPass(DIRECTIONAL_SHADOW_MAP_SIZE, DIRECTIONAL_SHADOW_MAP_SIZE, mainRenderPass.GetNumberOfSwapChainColorAttachments());
+	components::ShadowMapRenderPass shadowMapRenderPass(DIRECTIONAL_SHADOW_MAP_SIZE, DIRECTIONAL_SHADOW_MAP_SIZE, mainRenderPass.GetNumberOfSwapChainColorAttachments());
 	////create pipelines
-	//components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline(shadowMapRenderPass);
-	//components::SolidPhongPipeline* phongPipeline = new components::SolidPhongPipeline(mainRenderPass, shadowMapRenderPass.GetShadowBufferImageViews());
+	components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline(shadowMapRenderPass);
+	components::SolidPhongPipeline* phongPipeline = new components::SolidPhongPipeline(mainRenderPass, shadowMapRenderPass.GetShadowBufferImageViews());
 	////create synchronization objects
-	//vk::SyncronizationService syncService;
+	vk::SyncronizationService syncService;
 	/////////////////load meshes
-	//auto floorMeshData = io::LoadMeshes("floor.glb");
-	//auto monkeyMeshData = io::LoadMeshes("monkey.glb");
-	//auto boxMeshData = io::LoadMeshes("untitled.glb");
-	//auto coneMeshData = io::LoadMeshes("cone.glb");
-	//components::Mesh* floorMesh = new components::Mesh(floorMeshData[0]);
-	//components::Mesh* monkeyMesh = new components::Mesh(monkeyMeshData[0]);
-	//components::Mesh* ballMesh = new components::Mesh(boxMeshData[0]);
-	//components::Mesh* coneMesh = new components::Mesh(coneMeshData[0]);
+	auto floorMeshData = io::LoadMeshes("floor.glb");
+	auto monkeyMeshData = io::LoadMeshes("monkey.glb");
+	auto boxMeshData = io::LoadMeshes("untitled.glb");
+	auto coneMeshData = io::LoadMeshes("cone.glb");
+	components::Mesh* floorMesh = new components::Mesh(floorMeshData[0]);
+	components::Mesh* monkeyMesh = new components::Mesh(monkeyMeshData[0]);
+	components::Mesh* ballMesh = new components::Mesh(boxMeshData[0]);
+	components::Mesh* coneMesh = new components::Mesh(coneMeshData[0]);
 	////////////////Create the camera
-	//components::Camera* camera = new components::Camera("mainCamera");
-	//camera->mFOV = glm::radians(45.0f);
-	//camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
-	//camera->mZNear = 0.01f;
-	//camera->mZFar = 100.0f;
-	//camera->mPosition = { 10, 10, 10};
-	//camera->LookTo({ 0,0,0 });
+	components::Camera* camera = new components::Camera("mainCamera");
+	camera->mFOV = glm::radians(45.0f);
+	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
+	camera->mZNear = 0.01f;
+	camera->mZFar = 100.0f;
+	camera->mPosition = { 10, 10, 10};
+	camera->LookTo({ 0,0,0 });
 	///////////////Create the game objects
-	//components::Renderable* myBox1 = new components::Renderable("box1", *ballMesh);
-	//myBox1->mPosition = {-3,0,0};
-	////myBox->LookTo({ 1,0,0 });
+	components::Renderable* myBox1 = new components::Renderable("box1", *ballMesh);
+	myBox1->mPosition = {-3,0,0};
+	directionaLightShadowMapPipeline->AddRenderable(myBox1);
+	phongPipeline->AddRenderable(myBox1);
 
-	//components::Renderable* myMonkey = new components::Renderable("monkey", *monkeyMesh);
-	//myMonkey->mPosition = { 0,0,0};
-	//myMonkey->LookTo({ 100,0,0 });
+	components::Renderable* myMonkey = new components::Renderable("monkey", *monkeyMesh);
+	myMonkey->mPosition = { 0,0,0};
+	myMonkey->LookTo({ 100,0,0 });
+	directionaLightShadowMapPipeline->AddRenderable(myMonkey);
+	phongPipeline->AddRenderable(myMonkey);
 
-	//components::Renderable* myBox2 = new components::Renderable("box2", *ballMesh);
-	//myBox2->mPosition = { 3,0,0 };
+	components::Renderable* myBox2 = new components::Renderable("box2", *ballMesh);
+	myBox2->mPosition = { 3,0,0 };
+	directionaLightShadowMapPipeline->AddRenderable(myBox2);
+	phongPipeline->AddRenderable(myBox2);
 
-	//components::Renderable* myCone = new components::Renderable("cone", *coneMesh);
-	//myCone->mPosition = { 0, 0, 3 };
-	////myBall->LookTo({ 1,0,0 });
-	//std::vector<components::Renderable*> shadowProjectors{ 
-	//	myMonkey, 
-	//	myBox2, 
-	//	myBox1,
-	//	myCone
-	//};
-	//std::vector<components::Renderable*> phongPipelineObjects{ 
-	//	myMonkey, 
-	//	myBox2, 
-	//	myBox1,
-	//	myCone
-	//};
+	components::Renderable* myCone = new components::Renderable("cone", *coneMesh);
+	myCone->mPosition = { 0, 0, 3 };
+	directionaLightShadowMapPipeline->AddRenderable(myCone);
+	phongPipeline->AddRenderable(myCone);
 
-
-	//components::DirectionalLight* myDirectionalLight = new components::DirectionalLight();
-	//myDirectionalLight->SetColor({ 1,1,1 });
-	//myDirectionalLight->SetIntensity(1.0f);
+	components::DirectionalLight* myDirectionalLight = new components::DirectionalLight();
+	myDirectionalLight->SetColor({ 1,1,1 });
+	myDirectionalLight->SetIntensity(1.0f);
 
 	//////////////Create the command buffer
-	//ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
+	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 	//////////////On Resize
-	//std::function<void()> OnResize = [ &device, &mainRenderPass, &commandBuffers, &phongPipeline, &camera, &window]() {
-	//	int width = 0, height = 0;
-	//	glfwGetFramebufferSize(window.GetWindow(), &width, &height);
-	//	while (width == 0 || height == 0) {
-	//		//it's minimized, lets wait for glfw events.
-	//		glfwGetFramebufferSize(window.GetWindow(), &width, &height);
-	//		glfwWaitEvents();
-	//	}
-	//	//wait for the device to stop doing all tasks
-	//	vkDeviceWaitIdle(device.GetDevice());
-	//	//destroy the structures affected by resize
-	//	mainRenderPass.DestroyFramebuffers();
-	//	vkFreeCommandBuffers(device.GetDevice(),
-	//		device.GetCommandPool(), commandBuffers.size(), commandBuffers.data());
-	//	phongPipeline->DestroyPipeline();
-	//	mainRenderPass.DestroyRenderPass();
-	//	mainRenderPass.GetSwapChain()->DestroyImageViews();
-	//	mainRenderPass.GetSwapChain()->DestroySwapChain();
-	//	//recreate them
-	//	mainRenderPass.Recreate();
-	//	phongPipeline->Recreate();
-	//	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
-	//	commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
-	//	};
+	std::function<void()> OnResize = [ &device, &mainRenderPass, &commandBuffers, &phongPipeline, &camera, &window]() {
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(window.GetWindow(), &width, &height);
+		while (width == 0 || height == 0) {
+			//it's minimized, lets wait for glfw events.
+			glfwGetFramebufferSize(window.GetWindow(), &width, &height);
+			glfwWaitEvents();
+		}
+		//wait for the device to stop doing all tasks
+		vkDeviceWaitIdle(device.GetDevice());
+		//destroy the structures affected by resize
+		mainRenderPass.DestroyFramebuffers();
+		vkFreeCommandBuffers(device.GetDevice(),
+			device.GetCommandPool(), commandBuffers.size(), commandBuffers.data());
+		phongPipeline->DestroyPipeline();
+		mainRenderPass.DestroyRenderPass();
+		mainRenderPass.GetSwapChain()->DestroyImageViews();
+		mainRenderPass.GetSwapChain()->DestroySwapChain();
+		//recreate them
+		mainRenderPass.Recreate();
+		phongPipeline->Recreate();
+		camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
+		commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
+		};
 	//////////////OnRender
-	//size_t currentFrameId = 0;
-	//window.OnRender = [&myDirectionalLight, &currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass,
-	//	&phongPipeline, &syncService, &camera, &shadowProjectors,&phongPipelineObjects, &OnResize, &directionaLightShadowMapPipeline]
-	//(app::Window* wnd) {
-	//	//begin the frame
-	//	vk::Frame frame(commandBuffers,currentFrameId, syncService, *mainRenderPass.GetSwapChain());
-	//	frame.OnResize = OnResize;
-	//	frame.BeginFrame();
-	//	//Shadow map: activate the render passes
-	//	shadowMapRenderPass.SetImageIndex(frame.mImageIndex);
-	//	shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.mImageIndex, currentFrameId);
+	size_t currentFrameId = 0;
+	window.OnRender = [&myDirectionalLight, &currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass,
+		&phongPipeline, &syncService, &camera, &OnResize, &directionaLightShadowMapPipeline]
+	(app::Window* wnd) {
+		//begin the frame
+		vk::Frame frame(commandBuffers,currentFrameId, syncService, *mainRenderPass.GetSwapChain());
+		frame.OnResize = OnResize;
+		frame.BeginFrame();
+		//Shadow map: activate the render passes
+		shadowMapRenderPass.SetImageIndex(frame.mImageIndex);
+		shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.mImageIndex, currentFrameId);
 
-	//	//Shadow map: activate pipelines that use the render pass
-	//	directionaLightShadowMapPipeline->Bind(frame.CommandBuffer(), currentFrameId);
+		//Shadow map: activate pipelines that use the render pass
+		directionaLightShadowMapPipeline->Bind(frame.CommandBuffer(), currentFrameId);
 
-	//	components::LightSpaceMatrixUniformBuffer lightMatrixObj{ myDirectionalLight->GetLightMatrix()};
-	//	directionaLightShadowMapPipeline->SetLightMatrix(frame.CommandBuffer(), lightMatrixObj);
-	//	for (auto& o : shadowProjectors) {
-	//		o->SetUniforms(currentFrameId, *directionaLightShadowMapPipeline, frame.CommandBuffer());
-	//		directionaLightShadowMapPipeline->Draw(*o, frame.CommandBuffer());
-	//	}
-	//	directionaLightShadowMapPipeline->Unbind(frame.CommandBuffer());
-	//	//Shadow map: end the render pass
-	//	shadowMapRenderPass.EndRenderPass(frame.CommandBuffer());
-	//	//main render pass: activate the render pass
-	//	mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.mImageIndex, currentFrameId);
-	//	mainRenderPass.SetImageIndex(frame.mImageIndex);
-	//	//activate pipelines that use the render pass
-	//	phongPipeline->Bind(frame.CommandBuffer(), currentFrameId);
-	//	myDirectionalLight->SetUniform(currentFrameId, *phongPipeline, frame.CommandBuffer());
-	//	phongPipeline->ActivateShadowMap(frame.mImageIndex, frame.CommandBuffer());
-	//	camera->SetUniform(currentFrameId, *phongPipeline, frame.CommandBuffer());
-	//	for (auto& o : phongPipelineObjects)
-	//	{
-	//		o->SetUniforms(currentFrameId, *phongPipeline, frame.CommandBuffer());
-	//		phongPipeline->Draw(*o, frame.CommandBuffer());
-	//	}
-	//	phongPipeline->Unbind(frame.CommandBuffer());
-	//	//end the render pass
-	//	mainRenderPass.EndRenderPass(frame.CommandBuffer());
-	//	//end the frame
-	//	frame.EndFrame();
-	//	currentFrameId = (currentFrameId + 1)%MAX_FRAMES_IN_FLIGHT;
-	//};
-	//window.OnResize = OnResize;
-	//window.MainLoop();
-	////beginning shutdown
-	//syncService.WaitDeviceIdle();
-	//delete myMonkey;
-	//delete camera;
-	//delete phongPipeline;
-	//delete directionaLightShadowMapPipeline;
+		components::LightSpaceMatrixUniformBuffer lightMatrixObj{ myDirectionalLight->GetLightMatrix()};
+		directionaLightShadowMapPipeline->SetLightMatrix(frame.CommandBuffer(), lightMatrixObj);
+		;
+		for (auto& o : directionaLightShadowMapPipeline->GetRenderables()) {
+			if (o != nullptr) {
+				o->SetUniforms(currentFrameId, *directionaLightShadowMapPipeline, frame.CommandBuffer());
+				directionaLightShadowMapPipeline->Draw(*o, frame.CommandBuffer());
+			}
+		}
+		directionaLightShadowMapPipeline->Unbind(frame.CommandBuffer());
+		//Shadow map: end the render pass
+		shadowMapRenderPass.EndRenderPass(frame.CommandBuffer());
+		//main render pass: activate the render pass
+		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.mImageIndex, currentFrameId);
+		mainRenderPass.SetImageIndex(frame.mImageIndex);
+		//activate pipelines that use the render pass
+		phongPipeline->Bind(frame.CommandBuffer(), currentFrameId);
+		myDirectionalLight->SetUniform(currentFrameId, *phongPipeline, frame.CommandBuffer());
+		phongPipeline->ActivateShadowMap(frame.mImageIndex, frame.CommandBuffer());
+		camera->SetUniform(currentFrameId, *phongPipeline, frame.CommandBuffer());
+		for (auto& o : phongPipeline->GetRenderables())
+		{
+			if (o != nullptr) {
+				o->SetUniforms(currentFrameId, *phongPipeline, frame.CommandBuffer());
+				phongPipeline->Draw(*o, frame.CommandBuffer());
+			}
+		}
+		phongPipeline->Unbind(frame.CommandBuffer());
+		//end the render pass
+		mainRenderPass.EndRenderPass(frame.CommandBuffer());
+		//end the frame
+		frame.EndFrame();
+		currentFrameId = (currentFrameId + 1)%MAX_FRAMES_IN_FLIGHT;
+	};
+	window.OnResize = OnResize;
+	window.MainLoop();
+	//beginning shutdown
+	syncService.WaitDeviceIdle(); //wait for everything
+
+	delete phongPipeline;
+	delete directionaLightShadowMapPipeline;
+	delete floorMesh;
+	delete monkeyMesh;
+	delete ballMesh;
+	delete coneMesh;
+	delete camera;
+	delete myBox1;
+	delete myBox2;
+	delete myCone;
+	delete myMonkey;
 	return 0;
 }

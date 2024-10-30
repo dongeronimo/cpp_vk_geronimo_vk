@@ -30,6 +30,14 @@ namespace components {
     DirectionalLightShadowMapPipeline::~DirectionalLightShadowMapPipeline()
     {
         const auto device = vk::Device::gDevice->GetDevice();
+        //master: missing deletions
+        for (auto& x : mModelBufferMemory) {
+            vkFreeMemory(device, x, nullptr);
+        }
+        for (auto& x : mModelBuffer) {
+            vkDestroyBuffer(device, x, nullptr);
+        }
+        ////////////////////////////
         vkDestroyShaderModule(device, mVertexShader, nullptr);
         vkDestroyShaderModule(device, mFragmentShader, nullptr);
     }
@@ -184,6 +192,10 @@ namespace components {
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 mModelBuffer[i], mModelBufferMemory[i]);
+            auto nb = Concatenate(mName, "ModelBuffer", i);
+            SET_NAME(mModelBuffer[i], VK_OBJECT_TYPE_BUFFER, nb.c_str());
+            auto nm = Concatenate(mName, "ModelMemory", i);
+            SET_NAME(mModelBufferMemory[i], VK_OBJECT_TYPE_DEVICE_MEMORY, nm.c_str());
         }
     }
 

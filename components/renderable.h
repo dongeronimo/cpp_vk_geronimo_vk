@@ -24,6 +24,7 @@ namespace components
             const vk::Pipeline& pipeline,
             VkCommandBuffer cmdBuffer);
         friend class PhongModelMatrixUniform;
+        uint32_t GetModelId() { return mModelMatrixUniform.mModelId; }
     private:
         PhongModelMatrixUniform mModelMatrixUniform;
     };

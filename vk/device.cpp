@@ -89,6 +89,7 @@ namespace vk {
     }
     Device::~Device()
     {
+        vkDestroyCommandPool(mDevice, mShortLivedCommandsPool, nullptr);//master
         vkDestroyCommandPool(mDevice, mMainCommandPool, nullptr);
         vkDestroyDevice(mDevice, nullptr);
     }

@@ -67,9 +67,7 @@ namespace components
         ring_buffer_t<VkDeviceMemory> mDirectionalLightMemory;
         ring_buffer_t<VkDescriptorSet> mDirectionalLightDescriptorSet;
 
-        //TODO shadow: add sampler to sample the shadow data
         VkSampler mShadowDepthSampler = VK_NULL_HANDLE;
-        //TODO shadow: update the shader to use the shadow map
 
         void CreateDepthSampler();
         void CreateDescriptorSetLayout();

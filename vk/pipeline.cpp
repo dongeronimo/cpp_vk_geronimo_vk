@@ -12,6 +12,7 @@
 vk::Pipeline::Pipeline(const std::string name, const RenderPass& rp):
     mName(name), mHash(utils::Hash(name)), mRenderPass(rp)
 {
+    mRenderables.resize(MAX_NUMBER_OF_OBJS);
     assert(name.size() > 0); //we need a name
 }
 
@@ -96,6 +97,16 @@ void vk::Pipeline::Draw(components::Renderable& r, VkCommandBuffer cmdBuffer)
         0,
         0);
     vk::EndMark(cmdBuffer);
+}
+
+void vk::Pipeline::AddRenderable(components::Renderable* r)
+{
+    mRenderables[r->GetModelId()] = r;
+}
+
+void vk::Pipeline::RemoveRenderable(components::Renderable* r)
+{
+    mRenderables[r->GetModelId()] = nullptr;
 }
 
 std::vector<VkPipelineShaderStageCreateInfo> vk::Pipeline::CreateShaderStage(VkShaderModule vert, VkShaderModule frag)

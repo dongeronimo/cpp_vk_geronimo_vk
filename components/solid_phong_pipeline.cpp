@@ -153,13 +153,27 @@ namespace components
         vkDestroySampler(device, mShadowDepthSampler, nullptr);
         vkDestroyShaderModule(device, mVertexShader, nullptr);
         vkDestroyShaderModule(device, mFragmentShader, nullptr);
-        vkDestroyDescriptorPool(device, mDescriptorPool, nullptr);
+
         for (auto& m : mCameraBuffer) {
             vkDestroyBuffer(device, m, nullptr);
         }
         for (auto& m : mCameraBufferMemory) {
             vkFreeMemory(device, m, nullptr);
         }
+        //master: missing deletions
+        for (auto& m : mModelBuffer) {
+            vkDestroyBuffer(device, m, nullptr);
+        }
+        for (auto& m : mModelBufferMemory) {
+            vkFreeMemory(device, m, nullptr);
+        }
+        for (auto& m : mDirectionalLightBuffer) {
+            vkDestroyBuffer(device, m, nullptr);
+        }
+        for (auto& m : mDirectionalLightMemory) {
+            vkFreeMemory(device, m, nullptr);
+        }
+        //vkDestroyDescriptorPool(device, mDescriptorPool, nullptr);
     }
     void SolidPhongPipeline::ActivateShadowMap(uint32_t framebufferImageNumber, VkCommandBuffer buffer)
     {
