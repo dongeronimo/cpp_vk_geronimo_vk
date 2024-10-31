@@ -3,6 +3,7 @@
 #include <vector>
 #include "data_structures/ring_buffer.h"
 #include <functional>
+
 namespace vk {
     class SyncronizationService;
     class SwapChain;
@@ -24,6 +25,7 @@ namespace vk
         VkCommandBuffer CommandBuffer();
         void EndFrame();
         std::function<void()> OnResize;
+        float DeltaTime();
     private:
         const ring_buffer_t<VkCommandBuffer>& commandBuffers;
         vk::SyncronizationService& mSyncService;

@@ -40,7 +40,7 @@ namespace components
         }
         glm::vec3 mPosition;
         glm::quat mOrientation;
-        const std::string& mName;
+        const std::string mName;
         const uint32_t mId;
     };
 }

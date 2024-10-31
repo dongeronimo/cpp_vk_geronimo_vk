@@ -6,6 +6,10 @@
 #include <vk/swap_chain.h>
 #include <stdexcept>
 #include <cassert>
+#include <optional>
+#include <chrono>
+std::optional<std::chrono::steady_clock::time_point> gLastFrameTime;
+float gDeltaTime = 0;
 namespace vk
 {
     VkCommandBuffer Frame::CommandBuffer()
@@ -13,6 +17,7 @@ namespace vk
         return commandBuffers[mCurrentFrame];
     }
     Frame::Frame(
+        //static std::optional<
         const ring_buffer_t<VkCommandBuffer>& _commandBuffers,
         size_t currentFrame,
         vk::SyncronizationService& syncService,
@@ -23,7 +28,16 @@ namespace vk
         mImageIndex(UINT32_MAX),
         commandBuffers(_commandBuffers)
     {
-
+        if (!gLastFrameTime) {
+            gLastFrameTime = std::chrono::high_resolution_clock::now();
+            gDeltaTime = 0;
+        }
+        else {
+            auto currentTime = std::chrono::high_resolution_clock::now();
+            gDeltaTime = std::chrono::duration<double>(
+                currentTime - *gLastFrameTime).count();
+            gLastFrameTime = currentTime;
+        }
     }
     void Frame::Foobar()
     {
@@ -137,6 +151,10 @@ namespace vk
             throw std::runtime_error("failed to present swap chain image!");
         }
 
+    }
+    float Frame::DeltaTime()
+    {
+        return gDeltaTime;
     }
     bool Frame::IsDegenerateFramebuffer() const
     {

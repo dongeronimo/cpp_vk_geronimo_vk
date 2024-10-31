@@ -14,7 +14,11 @@
 #include "components/renderable.h"
 #include "vk/swap_chain.h"
 #include "components/directional_light.h"
+#include <utils/concatenate.h>
+#include "components/animation.h"
+#include <memory>
 
+std::vector<components::Renderable*> gObjectsList;
 int main(int argc, char** argv)
 {
 	//Create the window
@@ -39,7 +43,7 @@ int main(int argc, char** argv)
 	auto coneMeshData = io::LoadMeshes("cone.glb");
 	components::Mesh* floorMesh = new components::Mesh(floorMeshData[0]);
 	components::Mesh* monkeyMesh = new components::Mesh(monkeyMeshData[0]);
-	components::Mesh* ballMesh = new components::Mesh(boxMeshData[0]);
+	components::Mesh* boxMesh = new components::Mesh(boxMeshData[0]);
 	components::Mesh* coneMesh = new components::Mesh(coneMeshData[0]);
 	////////////////Create the camera
 	components::Camera* camera = new components::Camera("mainCamera");
@@ -47,29 +51,35 @@ int main(int argc, char** argv)
 	camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 	camera->mZNear = 0.01f;
 	camera->mZFar = 100.0f;
-	camera->mPosition = { 10, 10, 10};
+	camera->mPosition = { 5, 5, 5};
 	camera->LookTo({ 0,0,0 });
 	///////////////Create the game objects
-	components::Renderable* myBox1 = new components::Renderable("box1", *ballMesh);
+	components::Renderable* myBox1 = new components::Renderable("box1", *boxMesh);
 	myBox1->mPosition = {-3,0,0};
+	myBox1->EnqueueAnimation(std::make_shared<components::animations::RotateAroundForever>(glm::vec3(0, 1, 0), 90.0f, myBox1));
 	directionaLightShadowMapPipeline->AddRenderable(myBox1);
 	phongPipeline->AddRenderable(myBox1);
+	gObjectsList.push_back(myBox1);
+
 
 	components::Renderable* myMonkey = new components::Renderable("monkey", *monkeyMesh);
 	myMonkey->mPosition = { 0,0,0};
 	myMonkey->LookTo({ 100,0,0 });
 	directionaLightShadowMapPipeline->AddRenderable(myMonkey);
 	phongPipeline->AddRenderable(myMonkey);
+	gObjectsList.push_back(myMonkey);
 
-	components::Renderable* myBox2 = new components::Renderable("box2", *ballMesh);
+	components::Renderable* myBox2 = new components::Renderable("box2", *boxMesh);
 	myBox2->mPosition = { 3,0,0 };
 	directionaLightShadowMapPipeline->AddRenderable(myBox2);
 	phongPipeline->AddRenderable(myBox2);
+	gObjectsList.push_back(myBox2);
 
 	components::Renderable* myCone = new components::Renderable("cone", *coneMesh);
 	myCone->mPosition = { 0, 0, 3 };
 	directionaLightShadowMapPipeline->AddRenderable(myCone);
 	phongPipeline->AddRenderable(myCone);
+	gObjectsList.push_back(myCone);
 
 	components::DirectionalLight* myDirectionalLight = new components::DirectionalLight();
 	myDirectionalLight->SetColor({ 1,1,1 });
@@ -105,12 +115,22 @@ int main(int argc, char** argv)
 	//////////////OnRender
 	size_t currentFrameId = 0;
 	window.OnRender = [&myDirectionalLight, &currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass,
-		&phongPipeline, &syncService, &camera, &OnResize, &directionaLightShadowMapPipeline]
+		&phongPipeline, &syncService, &camera, &OnResize, &directionaLightShadowMapPipeline, &myBox2]
 	(app::Window* wnd) {
 		//begin the frame
 		vk::Frame frame(commandBuffers,currentFrameId, syncService, *mainRenderPass.GetSwapChain());
 		frame.OnResize = OnResize;
 		frame.BeginFrame();
+		///animations
+		for (auto& o : gObjectsList) {
+			o->AdvanceAnimation(frame.DeltaTime());
+		}
+		//float deltaT = frame.DeltaTime();
+		//static float angle = 0.0f;
+		//angle += 90.0f * deltaT;
+		//glm::quat dest = glm::angleAxis(glm::radians(angle), glm::vec3{ 0,1,0 });
+		//myBox2->mOrientation = glm::lerp(myBox2->mOrientation, dest, 0.5f);
+
 		//Shadow map: activate the render passes
 		shadowMapRenderPass.SetImageIndex(frame.mImageIndex);
 		shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.mImageIndex, currentFrameId);
@@ -161,7 +181,7 @@ int main(int argc, char** argv)
 	delete directionaLightShadowMapPipeline;
 	delete floorMesh;
 	delete monkeyMesh;
-	delete ballMesh;
+	delete boxMesh;
 	delete coneMesh;
 	delete camera;
 	delete myBox1;

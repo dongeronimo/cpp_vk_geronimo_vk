@@ -1,6 +1,7 @@
 #include "renderable.h"
 #include <array>
 #include <stdexcept>
+#include "animation.h"
 enum MODEL_ID_STATE {model_id_free, model_id_used};
 
 std::vector<MODEL_ID_STATE> gAvailableModelIDs(MAX_NUMBER_OF_OBJS, model_id_free);
@@ -29,6 +30,23 @@ namespace components {
     {
         this->mModelMatrixUniform.SetUniform(currentFrame, pipeline, cmdBuffer);
     }
+    void Renderable::AdvanceAnimation(float deltaTime)
+    {
+        if (mAnimations.size() > 0) {
+            std::shared_ptr<Animation> current = mAnimations.front();
+            if (current->IsFinished()) {
+                current->OnEnd();
+                mAnimations.pop();
+                if (mAnimations.size() > 0) {
+                    current = mAnimations.front();
+                    current->OnStart();
+                }
+            }
+            else {
+                current->Advance(deltaTime);
+            }
+        }
+    }
     PhongModelMatrixUniform::PhongModelMatrixUniform(Renderable& owner, uint32_t mModelId):
         components::ModelMatrixUniform(GetAvailableModelId()), mOwner(owner)
     {
@@ -38,7 +56,7 @@ namespace components {
         //update model matrix
         glm::mat4 rotationMatrix = glm::toMat4(mOwner.mOrientation);
         glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), mOwner.mPosition);
-        glm::mat4 model = rotationMatrix * translationMatrix;
+        glm::mat4 model = translationMatrix * rotationMatrix;
         mModelData.model = model;
 
         ModelMatrixUniform::SetUniform(currentFrame, pipeline, cmdBuffer);

@@ -2,9 +2,12 @@
 #include "transform.h"
 #include "mesh.h"
 #include "solid_phong_pipeline.h"
+#include <queue>
+#include <memory>
 namespace components
 {
     class Renderable;
+    class Animation;
 
     class PhongModelMatrixUniform: public ModelMatrixUniform {
     public:
@@ -25,8 +28,15 @@ namespace components
             VkCommandBuffer cmdBuffer);
         friend class PhongModelMatrixUniform;
         uint32_t GetModelId() { return mModelMatrixUniform.mModelId; }
+
+        void AdvanceAnimation(float deltaTime);
+        void EnqueueAnimation(std::shared_ptr<Animation> a) {
+            assert(a != nullptr);
+            mAnimations.push(a);
+        }
     private:
         PhongModelMatrixUniform mModelMatrixUniform;
+        std::queue<std::shared_ptr<Animation>> mAnimations;
     };
 
 }

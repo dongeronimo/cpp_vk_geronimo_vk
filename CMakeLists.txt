@@ -93,7 +93,7 @@ target_link_libraries(geronimo_vk_demo PRIVATE
 
 target_compile_definitions(geronimo_vk_demo PRIVATE 
     VK_DEBUG_LEVEL=VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT # See VkDebugUtilsMessageSeverityFlagBitsEXT @vulkan_core.h
-    MAX_FRAMES_IN_FLIGHT=1
+    MAX_FRAMES_IN_FLIGHT=3
     GLM_FORCE_RADIANS #GLM must use radians everywhere
     GLM_FORCE_DEFAULT_ALIGNED_GENTYPES #Force glm vector and matrix types to be aligned
     GLM_FORCE_DEPTH_ZERO_TO_ONE
