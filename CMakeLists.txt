@@ -28,6 +28,32 @@ FetchContent_Declare(
   GIT_TAG        1.0.0 # Specify the desired version
 )
 FetchContent_MakeAvailable(glm)
+# Fetch imgui
+# imgui will be placed at ./build/_deps
+# we need it to get some files and add them to the executable
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.91.4
+)
+FetchContent_MakeAvailable(imgui)
+set(imgui_files #these are the necessary files
+    "build/_deps/imgui-src/imgui.h"
+    "build/_deps/imgui-src/imgui.cpp"
+    "build/_deps/imgui-src/imgui_draw.cpp"
+    "build/_deps/imgui-src/imgui_widgets.cpp"
+    "build/_deps/imgui-src/imgui_demo.cpp"
+    "build/_deps/imgui-src/imgui_tables.cpp"
+    "build/_deps/imgui-src/imgui_widgets.cpp"
+    "build/_deps/imgui-src/imgui_internal.h"
+    "build/_deps/imgui-src/backends/imgui_impl_vulkan.h"
+    "build/_deps/imgui-src/backends/imgui_impl_vulkan.cpp"
+    "build/_deps/imgui-src/backends/imgui_impl_glfw.h"
+    "build/_deps/imgui-src/backends/imgui_impl_glfw.cpp"
+    )
+set(imgui_include_path #i also must set the include path or else imgui won't find the includes
+    "build/_deps/imgui-src"
+)
 # Fetch Assimp
 # Disable all exporters
 set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
@@ -61,7 +87,6 @@ file(GLOB vk_files "vk/*.h" "vk/*.cpp")
 file(GLOB utils_files "utils/*.h" "utils/*.cpp")
 file(GLOB components_files "components/*.h" "components/*.cpp")
 file(GLOB io_files "io/*.h" "io/*.cpp")
-
 #####Group them in a nice organization#####
 source_group("app" FILES ${app_files})
 source_group("vk" FILES ${vk_files})
@@ -71,6 +96,7 @@ source_group("scripts" FILES ${scripts_files})
 source_group("utils" FILES ${utils_files})
 source_group("components" FILES ${components_files})
 source_group("io" FILES ${io_files})
+source_group("imgui" FILES ${imgui_files})
 #####Create the target#####
 add_executable(geronimo_vk_demo
     ${app_files}
@@ -81,8 +107,10 @@ add_executable(geronimo_vk_demo
     ${utils_files}
     ${components_files}
     ${io_files}
+    ${imgui_files}
 )
 target_include_directories(geronimo_vk_demo PRIVATE .)
+target_include_directories(geronimo_vk_demo PRIVATE ${imgui_include_path})
 # Include GLM headers
 target_include_directories(geronimo_vk_demo PRIVATE ${glm_SOURCE_DIR})
 
