@@ -1,5 +1,8 @@
 #include "window.h"
 #include "glm/glm.hpp"
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 /// <summary>
 /// I need this global variable here bc glfwSetCursorPosCallback does not accept lamba scope capture.
 /// </summary>
@@ -39,6 +42,10 @@ namespace app {
         while (!glfwWindowShouldClose(mWindow))
         {
             glfwPollEvents();
+            //is minimized, put imgui to sleep
+            if (glfwGetWindowAttrib(mWindow, GLFW_ICONIFIED) != 0) {
+                ImGui_ImplGlfw_Sleep(10);
+            }
             OnRender(this);
         }
     }

@@ -8,6 +8,7 @@
 #include <cassert>
 #include <optional>
 #include <chrono>
+#include "app/imgui_utils.h"
 std::optional<std::chrono::steady_clock::time_point> gLastFrameTime;
 float gDeltaTime = 0;
 namespace vk
@@ -39,10 +40,8 @@ namespace vk
             gLastFrameTime = currentTime;
         }
     }
-    void Frame::Foobar()
-    {
-    }
-    bool Frame::BeginFrame()
+    
+    bool Frame::BeginFrame(app::ImguiUtils* imgui)
     {
         //auto inFlightFences = mSyncService.InFlightFences(mCurrentFrame);
         if (IsDegenerateFramebuffer())
@@ -67,6 +66,8 @@ namespace vk
         }
         //resets the command buffer
         vkResetCommandBuffer(CommandBuffer(), 0);
+        //we must create imgui frame before beginning the command buffer.
+        imgui->BeginImguiFrame();
         //begin the command buffer
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -76,20 +77,7 @@ namespace vk
         if (vkBeginCommandBuffer(CommandBuffer(), &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("failed to begin recording command buffer!");
         }
-        //viewport and scissors are no longer dynamic
-        //VkViewport viewport{};
-        //viewport.x = 0.0f;
-        //viewport.y = 0.0f;
-        //viewport.width = static_cast<float>(mSwapChain.GetExtent().width);
-        //viewport.height = static_cast<float>(mSwapChain.GetExtent().height);
-        //viewport.minDepth = 0.0f;
-        //viewport.maxDepth = 1.0f;
-        //vkCmdSetViewport(CommandBuffer(), 0, 1, &viewport);
-
-        //VkRect2D scissor{};
-        //scissor.offset = { 0, 0 };
-        //scissor.extent = mSwapChain.GetExtent();
-        //vkCmdSetScissor(CommandBuffer(), 0, 1, &scissor);
+        
         return true;
     }
 
