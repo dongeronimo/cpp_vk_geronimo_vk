@@ -3,7 +3,9 @@
 #include <vector>
 #include "data_structures/ring_buffer.h"
 #include <functional>
-
+namespace app {
+    class ImguiUtils;
+}
 namespace vk {
     class SyncronizationService;
     class SwapChain;
@@ -18,8 +20,7 @@ namespace vk
             size_t currentFrame,
             vk::SyncronizationService& syncService,
             vk::SwapChain& swapChain);
-        void Foobar();
-        bool BeginFrame();
+        bool BeginFrame(app::ImguiUtils* imgui);
         uint32_t mImageIndex;
         const size_t mCurrentFrame;
         VkCommandBuffer CommandBuffer();

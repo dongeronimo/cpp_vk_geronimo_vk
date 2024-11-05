@@ -33,3 +33,15 @@ for fs in fragment_shaders:
     command = arg
     result = subprocess.run(command, capture_output=True, text=True)
     print(result.stdout)
+
+#compile imgui shaders
+imgui_shader_path = arguments[0]+"/build/_deps/imgui-src/backends/vulkan/"
+arg = f"C:/VulkanSDK/1.3.283.0/Bin/glslc.exe {imgui_shader_path}/glsl_shader.vert -o {shader_dst_folder}/glsl_shader.vert.spv"
+print(f">> {arg}");
+command = arg
+result = subprocess.run(command, capture_output=True, text=True)
+arg = f"C:/VulkanSDK/1.3.283.0/Bin/glslc.exe {imgui_shader_path}/glsl_shader.frag -o {shader_dst_folder}/glsl_shader.frag.spv"
+print(f">> {arg}");
+command = arg
+result = subprocess.run(command, capture_output=True, text=True)
+   

@@ -17,6 +17,7 @@
 #include <utils/concatenate.h>
 #include "components/animation.h"
 #include <memory>
+#include <app/imgui_utils.h>
 
 std::vector<components::Renderable*> gObjectsList;
 int main(int argc, char** argv)
@@ -87,6 +88,10 @@ int main(int argc, char** argv)
 
 	//////////////Create the command buffer
 	ring_buffer_t<VkCommandBuffer> commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
+	///Create imgui
+	app::ImguiUtils imguiUtils(window.GetWindow(), 
+		mainRenderPass.GetSwapChain()->GetImageViews().size(),
+		mainRenderPass.GetRenderPass());
 	//////////////On Resize
 	std::function<void()> OnResize = [ &device, &mainRenderPass, &commandBuffers, &phongPipeline, &camera, &window]() {
 		int width = 0, height = 0;
@@ -115,12 +120,17 @@ int main(int argc, char** argv)
 	//////////////OnRender
 	size_t currentFrameId = 0;
 	window.OnRender = [&myDirectionalLight, &currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass,
-		&phongPipeline, &syncService, &camera, &OnResize, &directionaLightShadowMapPipeline, &myBox2]
+		&phongPipeline, &syncService, &camera, &OnResize, &directionaLightShadowMapPipeline, &myBox2, &imguiUtils]
 	(app::Window* wnd) {
+		
 		//begin the frame
 		vk::Frame frame(commandBuffers,currentFrameId, syncService, *mainRenderPass.GetSwapChain());
 		frame.OnResize = OnResize;
-		frame.BeginFrame();
+		frame.BeginFrame(&imguiUtils);
+		///Declare imgui ui
+		ImGui::Begin("Example Window");
+		ImGui::Text("Hello, Vulkan!");
+		ImGui::End();
 		///animations
 		for (auto& o : gObjectsList) {
 			o->AdvanceAnimation(frame.DeltaTime());
@@ -166,6 +176,9 @@ int main(int argc, char** argv)
 			}
 		}
 		phongPipeline->Unbind(frame.CommandBuffer());
+		//draw imgui as part of the main render pass
+		ImGui::Render();
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), frame.CommandBuffer());
 		//end the render pass
 		mainRenderPass.EndRenderPass(frame.CommandBuffer());
 		//end the frame
