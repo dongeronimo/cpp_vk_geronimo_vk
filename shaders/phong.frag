@@ -17,7 +17,8 @@ layout(set = 3, binding = 0) uniform DirectionalLightProperties {
    mat4 lightSpaceMatrix;
    vec4 colorAndIntensity;
 } directionalLight;
-layout(set = 4, binding = 0) uniform sampler phongSampler;
+layout(set = 4, binding = 0) uniform sampler phongSampler; //VK_DESCRIPTOR_TYPE_SAMPLER
+layout(set = 4, binding = 1) uniform texture2D phongDiffuse; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
 
 float calculateShadow(vec4 fragShadowCoord) {
     float bias = 0.001; //TODO shadows: use vk's bias infra. This exists due to shadow acne
@@ -35,7 +36,7 @@ void main()
     vec3 diffuseColor = diff * 
         directionalLight.colorAndIntensity.rgb *
         directionalLight.colorAndIntensity.a *
-        color;
+        texture(sampler2D(phongDiffuse, phongSampler), fragTexCoord).xyz;
     float shadow = calculateShadow(fragShadowCoord);
     vec3 lighting = shadow * diffuseColor;
     outColor = vec4(lighting, 1.0);
