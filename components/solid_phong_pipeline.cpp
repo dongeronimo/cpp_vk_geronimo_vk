@@ -129,7 +129,8 @@ namespace components
             throw std::runtime_error("failed to create graphics pipeline!");
         }
     }
-    SolidPhongPipeline::SolidPhongPipeline(const vk::RenderPass& rp, const std::vector<VkImageView>& shadowMapImageViews)
+    SolidPhongPipeline::SolidPhongPipeline(const vk::RenderPass& rp, const std::vector<VkImageView>& shadowMapImageViews,
+        VkImageView texture, VkSampler sampler)
         :vk::Pipeline("SolidPhongPipeline", rp)
     {
         const auto device = vk::Device::gDevice->GetDevice();

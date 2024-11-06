@@ -41,7 +41,8 @@ namespace components
 
     class SolidPhongPipeline : public vk::Pipeline {
     public:
-        SolidPhongPipeline(const vk::RenderPass& rp, const std::vector<VkImageView>& shadowMapImageViews);
+        SolidPhongPipeline(const vk::RenderPass& rp, const std::vector<VkImageView>& shadowMapImageViews,
+            VkImageView texture, VkSampler sampler);
         ~SolidPhongPipeline();
         void ActivateShadowMap(uint32_t framebufferImageNumber, VkCommandBuffer buffer);
         void Bind(VkCommandBuffer buffer, uint32_t currentFrame) override;

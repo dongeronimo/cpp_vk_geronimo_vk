@@ -18,6 +18,34 @@
 #include "components/animation.h"
 #include <memory>
 #include <app/imgui_utils.h>
+#include <vk/image.h>
+
+VkSampler LinearRepeatSampler() {
+	auto device = vk::Device::gDevice->GetDevice();
+	auto physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;
+	samplerInfo.minFilter = VK_FILTER_LINEAR;
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 0.0f;
+	VkSampler sampler;
+	vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+	return sampler;
+}
 
 std::vector<components::Renderable*> gObjectsList;
 int main(int argc, char** argv)
@@ -32,9 +60,14 @@ int main(int argc, char** argv)
 	////////////////create render passes//////////////
 	components::MainRenderPass mainRenderPass;
 	components::ShadowMapRenderPass shadowMapRenderPass(DIRECTIONAL_SHADOW_MAP_SIZE, DIRECTIONAL_SHADOW_MAP_SIZE, mainRenderPass.GetNumberOfSwapChainColorAttachments());
+	//load the images, the phong pipelines rely upon then
+	vk::Texture blackBrick("blackBrick.png");
+	//create the sampler to be used by the phong pipeline
+	VkSampler linearRepeatSampler = LinearRepeatSampler();
 	////create pipelines
 	components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline(shadowMapRenderPass);
-	components::SolidPhongPipeline* phongPipeline = new components::SolidPhongPipeline(mainRenderPass, shadowMapRenderPass.GetShadowBufferImageViews());
+	components::SolidPhongPipeline* phongPipeline = new components::SolidPhongPipeline(mainRenderPass,
+		shadowMapRenderPass.GetShadowBufferImageViews(), blackBrick.GetImageView(), linearRepeatSampler);
 	////create synchronization objects
 	vk::SyncronizationService syncService;
 	/////////////////load meshes
@@ -135,12 +168,6 @@ int main(int argc, char** argv)
 		for (auto& o : gObjectsList) {
 			o->AdvanceAnimation(frame.DeltaTime());
 		}
-		//float deltaT = frame.DeltaTime();
-		//static float angle = 0.0f;
-		//angle += 90.0f * deltaT;
-		//glm::quat dest = glm::angleAxis(glm::radians(angle), glm::vec3{ 0,1,0 });
-		//myBox2->mOrientation = glm::lerp(myBox2->mOrientation, dest, 0.5f);
-
 		//Shadow map: activate the render passes
 		shadowMapRenderPass.SetImageIndex(frame.mImageIndex);
 		shadowMapRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.mImageIndex, currentFrameId);

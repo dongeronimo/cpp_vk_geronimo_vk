@@ -17,6 +17,7 @@ layout(set = 3, binding = 0) uniform DirectionalLightProperties {
    mat4 lightSpaceMatrix;
    vec4 colorAndIntensity;
 } directionalLight;
+layout(set = 4, binding = 0) uniform sampler phongSampler;
 
 float calculateShadow(vec4 fragShadowCoord) {
     float bias = 0.001; //TODO shadows: use vk's bias infra. This exists due to shadow acne

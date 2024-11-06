@@ -11,4 +11,17 @@ namespace vk {
 
     VkImageView CreateImageView(VkImage image, VkFormat format, 
         VkImageAspectFlags aspectFlags);
+
+   
+    class Texture {
+    public:
+        Texture(const std::string& filename);
+        ~Texture();
+        VkImageView GetImageView()const { return mImageView; }
+        VkImage GetImage()const { return mImage; }
+    private:
+        VkImage mImage;
+        VkDeviceMemory mMemory;//TODO memory: vkDeviceMemory are precious and i'll run out of if each texture creates it's own, the images should be in a big memory block with all the images
+        VkImageView mImageView;
+    };
 }
