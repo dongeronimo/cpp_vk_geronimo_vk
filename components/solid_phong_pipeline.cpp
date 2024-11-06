@@ -140,7 +140,7 @@ namespace components
         CreateCameraBuffer();
         CreateModelBuffer();
         CreateDirectionalLightDataBuffer();
-        CreateDescriptorSet(shadowMapImageViews);
+        CreateDescriptorSet(shadowMapImageViews, sampler, texture);
         CreatePipelineLayout();
         ////Load the shaders////
         mVertexShader = vk::LoadShaderModule(device, "phong.vert.spv");
@@ -181,8 +181,17 @@ namespace components
         vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 2, 1, &mShadowMapDescriptorSet[framebufferImageNumber], 0, nullptr);
     }
     void SolidPhongPipeline::Bind(VkCommandBuffer buffer, uint32_t currentFrame)
-    {
+    {       
         Pipeline::Bind(buffer, currentFrame);
+        ///Bind the sampler and the texture
+        vkCmdBindDescriptorSets(buffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            mPipelineLayout,
+            4, //set number 4, where we have the phong textures and it's sampler
+            1,
+            &mPhongTexturesDescriptorSet,
+            0, //number of dynamic offsets
+            nullptr); //dynamic offset
     }
 
 
@@ -322,19 +331,22 @@ namespace components
         phongSamplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
         phongSamplerBinding.descriptorCount = 1;
         phongSamplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        phongSamplerBinding.pImmutableSamplers = nullptr;
         VkDescriptorSetLayoutBinding phongDiffuseTextureBinding;
         phongDiffuseTextureBinding.binding = 1;
         phongDiffuseTextureBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         phongDiffuseTextureBinding.descriptorCount = 1;
         phongDiffuseTextureBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        phongDiffuseTextureBinding.pImmutableSamplers = nullptr;
         VkDescriptorSetLayoutCreateInfo phongTextureLayoutInfo{};
         phongTextureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         std::array< VkDescriptorSetLayoutBinding, 2> phongBindings{ phongSamplerBinding, phongDiffuseTextureBinding };
         phongTextureLayoutInfo.bindingCount = phongBindings.size();
         phongTextureLayoutInfo.pBindings = phongBindings.data();
+        phongTextureLayoutInfo.flags = 0;
         VkDescriptorSetLayout phongLayout = VK_NULL_HANDLE;
-        vkCreateDescriptorSetLayout(device, &phongTextureLayoutInfo, nullptr, &phongLayout);
-        assert(phongLayout != VK_NULL_HANDLE);
+        VkResult result = vkCreateDescriptorSetLayout(device, &phongTextureLayoutInfo,
+            nullptr, &phongLayout);
         auto n5 = Concatenate(mName, "phongTexturesDescriptorSetLayout");
         SET_NAME(phongLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n5.c_str());
 
@@ -450,12 +462,13 @@ namespace components
 
         //phong textures descriptor set
         //create the descriptor set
-        std::vector<VkDescriptorSetLayout> phongTexturesLayout(1, mDescriptorSetLayouts[4]);
+        std::vector<VkDescriptorSetLayout> phongTexturesLayout(1, 
+            mDescriptorSetLayouts[4]);
         VkDescriptorSetAllocateInfo phongTexturesAllocInfo{};
         phongTexturesAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         phongTexturesAllocInfo.descriptorPool = mDescriptorPool;
         phongTexturesAllocInfo.descriptorSetCount = phongTexturesLayout.size();
-        phongTexturesAllocInfo.pSetLayouts = shadowMapLayouts.data();
+        phongTexturesAllocInfo.pSetLayouts = phongTexturesLayout.data();
         if (vkAllocateDescriptorSets(device, &phongTexturesAllocInfo,
             &mPhongTexturesDescriptorSet) != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate phong textures descriptor sets!");
@@ -485,8 +498,12 @@ namespace components
         phongDiffuseTextureWrite.descriptorCount = 1;
         phongDiffuseTextureWrite.pImageInfo = &phongDiffuseTextureInfo;
         // Update the descriptor set with both writes
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites = { phongSamplerWrite, phongDiffuseTextureWrite };
-        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        std::array<VkWriteDescriptorSet, 2> phongDescriptorWrites = { 
+            phongSamplerWrite, phongDiffuseTextureWrite 
+        };
+        vkUpdateDescriptorSets(device, 
+            static_cast<uint32_t>(phongDescriptorWrites.size()),
+            phongDescriptorWrites.data(), 0, nullptr);
 
         CreateDepthSampler();
         for (size_t i = 0; i < shadowMapImageViews.size(); i++)
