@@ -20,6 +20,7 @@ namespace components {
     {
         //take the position
         gAvailableModelIDs[mModelMatrixUniform.mModelId] = model_id_used;
+        mPhongProperties = std::make_unique<RenderablePhongProperties>(*this, mModelMatrixUniform.mModelId);
     }
     Renderable::~Renderable()
     {
@@ -28,6 +29,7 @@ namespace components {
     }
     void Renderable::SetUniforms(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer)
     {
+        this->mPhongProperties->SetUniform(currentFrame, pipeline, cmdBuffer);
         this->mModelMatrixUniform.SetUniform(currentFrame, pipeline, cmdBuffer);
     }
     void Renderable::AdvanceAnimation(float deltaTime)
@@ -61,4 +63,18 @@ namespace components {
 
         ModelMatrixUniform::SetUniform(currentFrame, pipeline, cmdBuffer);
     }
+   
+    RenderablePhongProperties::RenderablePhongProperties(Renderable& owner, uint32_t mModelId)
+        :components::PhongPropertiesUniform(mModelId), mOwner(owner)
+    {
+    }
+
+    void RenderablePhongProperties::SetUniform(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer)
+    {
+        mPhongData.ambientColor = this->mAmbientColor;
+        mPhongData.ambientStrength = this->mAmbientStrength;
+        mPhongData.specularStrength = this->mSpecularStrength;
+        PhongPropertiesUniform::SetUniform(currentFrame, pipeline, cmdBuffer);
+    }
+
 }

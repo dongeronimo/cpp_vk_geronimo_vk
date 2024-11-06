@@ -6,6 +6,12 @@ layout(location = 3) in vec4 fragShadowCoord;
 
 layout(location = 0) out vec4 outColor;
 
+layout(set=0, binding=1) uniform PhongProperties {
+    vec3 ambientColor;
+    float ambientStrength;
+    float specularStrength;
+}phongProperties;
+
 layout(set=1, binding=0) uniform Camera{
     mat4 view;
     mat4 proj;
@@ -41,14 +47,16 @@ void main()
     //specular component
     vec3 viewDirection = normalize(camera.viewPos - fragPosition);
     vec3 halfwayDir = normalize(lightDirection + viewDirection);
-    float spec = pow(max(dot(normal, halfwayDir),0.0), 64.0f);
+    float spec = pow(max(dot(normal, halfwayDir),0.0), phongProperties.specularStrength);
     vec3 specularColor = spec * 
         directionalLight.colorAndIntensity.rgb *
         directionalLight.colorAndIntensity.a *
         texture(sampler2D(phongSpecular, phongSampler), fragTexCoord).xyz;
+    //ambient component
+    vec3 ambientColor = phongProperties.ambientColor * phongProperties.ambientStrength;
     //shadow component
     float shadow = calculateShadow(fragShadowCoord);
-    vec3 lighting = shadow * (diffuseColor + specularColor);
+    vec3 lighting = ambientColor + shadow * (diffuseColor + specularColor);
     outColor = vec4(lighting, 1.0);
 
 }

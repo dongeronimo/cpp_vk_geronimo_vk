@@ -28,6 +28,17 @@ namespace components
         virtual ~CameraUniform() = default;
     };
 
+    class PhongPropertiesUniform : public vk::Uniform {
+    public:
+        PhongPropertiesUniform(uint32_t modelId) :mModelId(modelId) {}
+        const uint32_t mModelId;
+        PhongProperties mPhongData;
+        virtual void SetUniform(uint32_t currentFrame,
+            const vk::Pipeline& pipeline,
+            VkCommandBuffer cmdBuffer) override;
+        virtual ~PhongPropertiesUniform() = default;
+
+    };
     class ModelMatrixUniform : public vk::Uniform {
     public:
         ModelMatrixUniform(uint32_t mId):mModelId(mId){}
@@ -46,9 +57,11 @@ namespace components
         ~SolidPhongPipeline();
         void ActivateShadowMap(uint32_t framebufferImageNumber, VkCommandBuffer buffer);
         void Bind(VkCommandBuffer buffer, uint32_t currentFrame) override;
+        virtual void Draw(components::Renderable& r, VkCommandBuffer cmdBuffer, uint32_t currentFrame) override;
         friend class CameraUniform;
         friend class ModelMatrixUniform;
         friend class DirectionalLightUniform;
+        friend class PhongPropertiesUniform;
         void Recreate();
     private:
         std::vector<VkVertexInputAttributeDescription> AttributeDescription();
@@ -61,6 +74,9 @@ namespace components
         ring_buffer_t<VkBuffer> mModelBuffer;
         ring_buffer_t<VkDeviceMemory> mModelBufferMemory;
         ring_buffer_t<VkDescriptorSet> mModelDescriptorSet;
+
+        ring_buffer_t<VkBuffer> mPhongPropertiesBuffer;
+        ring_buffer_t<VkDeviceMemory> mPhongPropertiesMemory;
 
         std::vector<VkDescriptorSet> mShadowMapDescriptorSet;
         VkDescriptorSet mPhongTexturesDescriptorSet;

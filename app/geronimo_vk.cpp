@@ -102,6 +102,9 @@ int main(int argc, char** argv)
 	myMonkey->LookTo({ 100,0,0 });
 	directionaLightShadowMapPipeline->AddRenderable(myMonkey);
 	sciFiMetalPipeline->AddRenderable(myMonkey);
+	myMonkey->mPhongProperties->mAmbientColor = glm::vec3(1, 0, 0);
+	myMonkey->mPhongProperties->mAmbientStrength = 0.1f;
+	myMonkey->mPhongProperties->mSpecularStrength = 64.0f;
 	gObjectsList.push_back(myMonkey);
 
 	components::Renderable* myBox2 = new components::Renderable("box2", *boxMesh);
@@ -182,7 +185,7 @@ int main(int argc, char** argv)
 		for (auto& o : directionaLightShadowMapPipeline->GetRenderables()) {
 			if (o != nullptr) {
 				o->SetUniforms(currentFrameId, *directionaLightShadowMapPipeline, frame.CommandBuffer());
-				directionaLightShadowMapPipeline->Draw(*o, frame.CommandBuffer());
+				directionaLightShadowMapPipeline->Draw(*o, frame.CommandBuffer(), currentFrameId);
 			}
 		}
 		directionaLightShadowMapPipeline->Unbind(frame.CommandBuffer());
@@ -200,7 +203,7 @@ int main(int argc, char** argv)
 		{
 			if (o != nullptr) {
 				o->SetUniforms(currentFrameId, *sciFiMetalPipeline, frame.CommandBuffer());
-				sciFiMetalPipeline->Draw(*o, frame.CommandBuffer());
+				sciFiMetalPipeline->Draw(*o, frame.CommandBuffer(), currentFrameId);
 			}
 		}
 		sciFiMetalPipeline->Unbind(frame.CommandBuffer());

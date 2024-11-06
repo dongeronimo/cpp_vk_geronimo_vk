@@ -44,7 +44,7 @@ namespace vk
         /// </summary>
         /// <param name="r"></param>
         /// <param name="cmdBuffer"></param>
-        virtual void Draw(components::Renderable& r, VkCommandBuffer cmdBuffer);
+        virtual void Draw(components::Renderable& r, VkCommandBuffer cmdBuffer, uint32_t currentFrame);
         void AddRenderable(components::Renderable* r);
         void RemoveRenderable(components::Renderable* r);
         std::vector<components::Renderable*>& GetRenderables() {

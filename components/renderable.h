@@ -17,6 +17,17 @@ namespace components
             VkCommandBuffer cmdBuffer) override;
         Renderable& mOwner;
     };
+    class RenderablePhongProperties : public PhongPropertiesUniform {
+    public:
+        RenderablePhongProperties(Renderable& owner, uint32_t mModelId);
+        virtual void SetUniform(uint32_t currentFrame,
+            const vk::Pipeline& pipeline,
+            VkCommandBuffer cmdBuffer) override;
+        float mAmbientStrength;
+        float mSpecularStrength;
+        glm::vec3 mAmbientColor;
+        Renderable& mOwner;
+    };
 
     class Renderable : public Transform {
     public:
@@ -28,7 +39,7 @@ namespace components
             VkCommandBuffer cmdBuffer);
         friend class PhongModelMatrixUniform;
         uint32_t GetModelId() { return mModelMatrixUniform.mModelId; }
-
+        std::unique_ptr<RenderablePhongProperties> mPhongProperties = nullptr;
         void AdvanceAnimation(float deltaTime);
         void EnqueueAnimation(std::shared_ptr<Animation> a) {
             assert(a != nullptr);

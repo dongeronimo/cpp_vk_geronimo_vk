@@ -9,6 +9,7 @@
 #include <vk/render_pass.h>
 #include "mesh.h"
 #include "shadow_map_pipeline.h"
+#include "components/renderable.h"
 namespace components
 {
     void SolidPhongPipeline::Recreate()
@@ -194,6 +195,8 @@ namespace components
             nullptr); //dynamic offset
     }
 
+    
+
 
 
     std::vector<VkVertexInputAttributeDescription> SolidPhongPipeline::AttributeDescription()
@@ -276,16 +279,23 @@ namespace components
         auto n1 = Concatenate(mName, "CameraDescriptorSetLayout");
         SET_NAME(cameraDescriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n1.c_str());
 
-        VkDescriptorSetLayoutBinding modelBindings;
-        modelBindings.binding = 0; // Matches binding 0 in the shader
-        modelBindings.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        modelBindings.descriptorCount = 1;
-        modelBindings.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        modelBindings.pImmutableSamplers = nullptr; // Not used
+        VkDescriptorSetLayoutBinding modelBinding;
+        modelBinding.binding = 0; // Matches binding 0 in the shader
+        modelBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        modelBinding.descriptorCount = 1;
+        modelBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        modelBinding.pImmutableSamplers = nullptr; // Not used
+        VkDescriptorSetLayoutBinding phongPropertiesBindings;
+        phongPropertiesBindings.binding = 1; // Matches binding 1 in the shader
+        phongPropertiesBindings.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        phongPropertiesBindings.descriptorCount = 1;
+        phongPropertiesBindings.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        phongPropertiesBindings.pImmutableSamplers = nullptr; // Not used
         VkDescriptorSetLayoutCreateInfo modelLayoutInfo{};
+        std::array< VkDescriptorSetLayoutBinding, 2> modelBindings{ modelBinding, phongPropertiesBindings };
         modelLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        modelLayoutInfo.bindingCount = 1; // Only one binding, for the Camera uniform buffer
-        modelLayoutInfo.pBindings = &modelBindings;
+        modelLayoutInfo.bindingCount = modelBindings.size(); // Only one binding, for the Camera uniform buffer
+        modelLayoutInfo.pBindings = modelBindings.data();
         VkDescriptorSetLayout modelDescriptorSetLayout;
         if (vkCreateDescriptorSetLayout(device, &modelLayoutInfo, nullptr, &modelDescriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor set layout!");
@@ -368,32 +378,33 @@ namespace components
     void SolidPhongPipeline::CreateDescriptorPool()
     {
         const auto device = vk::Device::gDevice->GetDevice();
-        std::array<VkDescriptorPoolSize, 6> poolSizes;
+        std::array<VkDescriptorPoolSize, 7> poolSizes;
         // Camera - uniform buffer, one per frame
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
 
-        // Model - dynamic buffer, one per frame
+        // Model and phong properties- dynamic buffer, one per frame
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        poolSizes[1].descriptorCount = MAX_FRAMES_IN_FLIGHT; // Adjust this for the number of models
-
+        poolSizes[1].descriptorCount = MAX_FRAMES_IN_FLIGHT; 
+        poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        poolSizes[2].descriptorCount = MAX_FRAMES_IN_FLIGHT;
         // Shadow map - combined image sampler, one per frame
-        poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[2].descriptorCount = 20 *MAX_FRAMES_IN_FLIGHT;  
+        poolSizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[3].descriptorCount = 20 *MAX_FRAMES_IN_FLIGHT;  
         // Directional light data
-        poolSizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[3].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+        poolSizes[4].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[4].descriptorCount = MAX_FRAMES_IN_FLIGHT;
         // phong material textures
-        poolSizes[4].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-        poolSizes[4].descriptorCount = 1;
-        poolSizes[5].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        poolSizes[5].type = VK_DESCRIPTOR_TYPE_SAMPLER;
         poolSizes[5].descriptorCount = 1;
+        poolSizes[6].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        poolSizes[6].descriptorCount = 2;
         /////Create the descriptor pool/////
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = 1+ //One for the model
+        poolInfo.maxSets = 2+ //One for the model
             1+ //one for the camera
             1+ //one for the directional light
             1 + 1 + //for phong textures
@@ -574,6 +585,21 @@ namespace components
             modelDescriptorWrite.descriptorCount = 1;  // One buffer
             modelDescriptorWrite.pBufferInfo = &modelBufferInfo;  // Buffer info
 
+            VkDescriptorBufferInfo phongPropertiesBufferInfo{};
+            phongPropertiesBufferInfo.buffer = mPhongPropertiesBuffer[i];
+            phongPropertiesBufferInfo.offset = 0;  
+            phongPropertiesBufferInfo.range = utils::AlignedSize(sizeof(PhongProperties), 1, vk::Instance::gInstance->GetPhysicalDevice());  
+            VkWriteDescriptorSet phongPropertiesDescriptorWrite{};
+            phongPropertiesDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            phongPropertiesDescriptorWrite.dstSet = mModelDescriptorSet[i];  // Descriptor set to update
+            phongPropertiesDescriptorWrite.dstBinding = 1;  
+            phongPropertiesDescriptorWrite.dstArrayElement = 0;
+            phongPropertiesDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            phongPropertiesDescriptorWrite.descriptorCount = 1;  // One buffer
+            phongPropertiesDescriptorWrite.pBufferInfo = &phongPropertiesBufferInfo;  // Buffer info
+
+
+
             VkDescriptorBufferInfo directionalLightBufferInfo{};
             directionalLightBufferInfo.buffer = mDirectionalLightBuffer[i];  
             directionalLightBufferInfo.offset = 0;  // Adjust offset per object/model
@@ -588,7 +614,8 @@ namespace components
             directionalLightDescriptorWrite.pBufferInfo = &directionalLightBufferInfo;  // Buffer info
 
 
-            std::array<VkWriteDescriptorSet, 3> descriptorWrites = { cameraDescriptorWrite, modelDescriptorWrite,directionalLightDescriptorWrite };
+            std::array<VkWriteDescriptorSet, 4> descriptorWrites = { cameraDescriptorWrite, modelDescriptorWrite,
+                phongPropertiesDescriptorWrite,directionalLightDescriptorWrite };
             // Perform the update
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
@@ -630,7 +657,13 @@ namespace components
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 mModelBuffer[i], mModelBufferMemory[i]);
+            utils::CreateAlignedBuffer(sizeof(PhongProperties),
+                MAX_NUMBER_OF_OBJS,
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                mPhongPropertiesBuffer[i], mPhongPropertiesMemory[i]);
         }
+        
     }
 
     void CameraUniform::SetUniform(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer)
@@ -653,7 +686,47 @@ namespace components
             1,
             &phong.mCameraDescriptorSet[currentFrame], 0, nullptr);
     }
-
+    void PhongPropertiesUniform::SetUniform(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer)
+    {
+        //get my pipeline
+        if (pipeline.mHash == utils::Hash("SolidPhongPipeline")) {
+            const SolidPhongPipeline& phong = dynamic_cast<const SolidPhongPipeline&>(pipeline);
+            assert(mModelId != UINT32_MAX);
+            static VkPhysicalDevice physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
+            static auto device = vk::Device::gDevice->GetDevice();
+            void* data;
+            VkDeviceSize alignedSize = utils::AlignedSize(sizeof(PhongProperties),
+                1, physicalDevice);
+            uint32_t offset = alignedSize * mModelId;
+            vkMapMemory(device,
+                phong.mPhongPropertiesMemory[currentFrame],
+                offset, //offset
+                alignedSize, //size
+                0, &data);
+            memcpy(data, &mPhongData, sizeof(PhongProperties));
+            vkUnmapMemory(device, phong.mPhongPropertiesMemory[currentFrame]);
+        }
+    }
+    void SolidPhongPipeline::Draw(components::Renderable& r, VkCommandBuffer cmdBuffer, uint32_t currentFrame)
+    {
+        static VkPhysicalDevice physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
+        VkDeviceSize modelAlignedSize = utils::AlignedSize(sizeof(ModelUniformBuffer),
+            1, physicalDevice);
+        uint32_t modelOffset = modelAlignedSize * r.GetModelId();
+        VkDeviceSize phongPropsAlignedSize = utils::AlignedSize(sizeof(PhongProperties),
+            1, physicalDevice);
+        uint32_t phongPropsOffset = phongPropsAlignedSize * r.GetModelId();
+        std::array<uint32_t, 2> offsets{ modelOffset, phongPropsOffset };
+        vkCmdBindDescriptorSets(cmdBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            mPipelineLayout,
+            0, //set 0 
+            1,
+            &mModelDescriptorSet[currentFrame],
+            offsets.size(), //number of dynamic offsets
+            offsets.data()); //dynamic offset
+        Pipeline::Draw(r, cmdBuffer, currentFrame);
+    }
     void ModelMatrixUniform::SetUniform(uint32_t currentFrame,
         const vk::Pipeline& pipeline, 
         VkCommandBuffer cmdBuffer)
@@ -677,14 +750,14 @@ namespace components
             memcpy(data, &mModelData, sizeof(ModelUniformBuffer));
             vkUnmapMemory(device, phong.mModelBufferMemory[currentFrame]);
             //bind model descriptor set
-            vkCmdBindDescriptorSets(cmdBuffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                phong.mPipelineLayout,
-                0, //set 0 
-                1,
-                &phong.mModelDescriptorSet[currentFrame],
-                1, //number of dynamic offsets
-                &offset); //dynamic offset
+            //vkCmdBindDescriptorSets(cmdBuffer,
+            //    VK_PIPELINE_BIND_POINT_GRAPHICS,
+            //    phong.mPipelineLayout,
+            //    0, //set 0 
+            //    1,
+            //    &phong.mModelDescriptorSet[currentFrame],
+            //    1, //number of dynamic offsets
+            //    &offset); //dynamic offset
         }
         if (pipeline.mHash == utils::Hash("DirectionalShadowMapPipeline"))
         {
@@ -736,5 +809,6 @@ namespace components
             &phong.mDirectionalLightDescriptorSet[currentFrame], 0, nullptr);
     }
 
+    
 }
 

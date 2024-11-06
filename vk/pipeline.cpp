@@ -85,7 +85,7 @@ void vk::Pipeline::DestroyPipeline()
     //vkDestroyPipelineLayout(d, mPipelineLayout, nullptr);
 }
 
-void vk::Pipeline::Draw(components::Renderable& r, VkCommandBuffer cmdBuffer)
+void vk::Pipeline::Draw(components::Renderable& r, VkCommandBuffer cmdBuffer,uint32_t currentFrame)
 {
     //I assume that all descriptor sets were bind using Uniform::Set.
     vk::SetMark({ 1.0f, 0.8f, 1.0f, 1.0f }, r.mName, cmdBuffer);
