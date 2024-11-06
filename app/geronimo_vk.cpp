@@ -61,13 +61,14 @@ int main(int argc, char** argv)
 	components::MainRenderPass mainRenderPass;
 	components::ShadowMapRenderPass shadowMapRenderPass(DIRECTIONAL_SHADOW_MAP_SIZE, DIRECTIONAL_SHADOW_MAP_SIZE, mainRenderPass.GetNumberOfSwapChainColorAttachments());
 	//load the images, the phong pipelines rely upon then
-	vk::Texture blackBrick("blackBrick.png");
+	vk::Texture sciFiMetalDiffuse("Sci_fi_Metal_Panel_007_basecolor.png");
+	vk::Texture sciFiSpecular("Sci_fi_Metal_Panel_007_metallic.png");
 	//create the sampler to be used by the phong pipeline
 	VkSampler linearRepeatSampler = LinearRepeatSampler();
 	////create pipelines
 	components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline(shadowMapRenderPass);
-	components::SolidPhongPipeline* phongPipeline = new components::SolidPhongPipeline(mainRenderPass,
-		shadowMapRenderPass.GetShadowBufferImageViews(), blackBrick.GetImageView(), linearRepeatSampler);
+	components::SolidPhongPipeline* sciFiMetalPipeline = new components::SolidPhongPipeline(mainRenderPass,
+		shadowMapRenderPass.GetShadowBufferImageViews(), sciFiMetalDiffuse.GetImageView(), linearRepeatSampler);
 	////create synchronization objects
 	vk::SyncronizationService syncService;
 	/////////////////load meshes
@@ -92,7 +93,7 @@ int main(int argc, char** argv)
 	myBox1->mPosition = {-3,0,0};
 	myBox1->EnqueueAnimation(std::make_shared<components::animations::RotateAroundForever>(glm::vec3(0, 1, 0), 90.0f, myBox1));
 	directionaLightShadowMapPipeline->AddRenderable(myBox1);
-	phongPipeline->AddRenderable(myBox1);
+	sciFiMetalPipeline->AddRenderable(myBox1);
 	gObjectsList.push_back(myBox1);
 
 
@@ -100,19 +101,19 @@ int main(int argc, char** argv)
 	myMonkey->mPosition = { 0,0,0};
 	myMonkey->LookTo({ 100,0,0 });
 	directionaLightShadowMapPipeline->AddRenderable(myMonkey);
-	phongPipeline->AddRenderable(myMonkey);
+	sciFiMetalPipeline->AddRenderable(myMonkey);
 	gObjectsList.push_back(myMonkey);
 
 	components::Renderable* myBox2 = new components::Renderable("box2", *boxMesh);
 	myBox2->mPosition = { 3,0,0 };
 	directionaLightShadowMapPipeline->AddRenderable(myBox2);
-	phongPipeline->AddRenderable(myBox2);
+	sciFiMetalPipeline->AddRenderable(myBox2);
 	gObjectsList.push_back(myBox2);
 
 	components::Renderable* myCone = new components::Renderable("cone", *coneMesh);
 	myCone->mPosition = { 0, 0, 3 };
 	directionaLightShadowMapPipeline->AddRenderable(myCone);
-	phongPipeline->AddRenderable(myCone);
+	sciFiMetalPipeline->AddRenderable(myCone);
 	gObjectsList.push_back(myCone);
 
 	components::DirectionalLight* myDirectionalLight = new components::DirectionalLight();
@@ -126,7 +127,7 @@ int main(int argc, char** argv)
 		mainRenderPass.GetSwapChain()->GetImageViews().size(),
 		mainRenderPass.GetRenderPass());
 	//////////////On Resize
-	std::function<void()> OnResize = [ &device, &mainRenderPass, &commandBuffers, &phongPipeline, &camera, &window]() {
+	std::function<void()> OnResize = [ &device, &mainRenderPass, &commandBuffers, &sciFiMetalPipeline, &camera, &window]() {
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(window.GetWindow(), &width, &height);
 		while (width == 0 || height == 0) {
@@ -140,20 +141,20 @@ int main(int argc, char** argv)
 		mainRenderPass.DestroyFramebuffers();
 		vkFreeCommandBuffers(device.GetDevice(),
 			device.GetCommandPool(), commandBuffers.size(), commandBuffers.data());
-		phongPipeline->DestroyPipeline();
+		sciFiMetalPipeline->DestroyPipeline();
 		mainRenderPass.DestroyRenderPass();
 		mainRenderPass.GetSwapChain()->DestroyImageViews();
 		mainRenderPass.GetSwapChain()->DestroySwapChain();
 		//recreate them
 		mainRenderPass.Recreate();
-		phongPipeline->Recreate();
+		sciFiMetalPipeline->Recreate();
 		camera->mRatio = (float)mainRenderPass.GetExtent().width / (float)mainRenderPass.GetExtent().height;
 		commandBuffers = device.CreateCommandBuffers("mainCommandBuffer");
 		};
 	//////////////OnRender
 	size_t currentFrameId = 0;
 	window.OnRender = [&myDirectionalLight, &currentFrameId, &commandBuffers, &shadowMapRenderPass, &mainRenderPass,
-		&phongPipeline, &syncService, &camera, &OnResize, &directionaLightShadowMapPipeline, &myBox2, &imguiUtils]
+		&sciFiMetalPipeline, &syncService, &camera, &OnResize, &directionaLightShadowMapPipeline, &myBox2, &imguiUtils]
 	(app::Window* wnd) {
 		
 		//begin the frame
@@ -191,18 +192,18 @@ int main(int argc, char** argv)
 		mainRenderPass.BeginRenderPass(frame.CommandBuffer(), frame.mImageIndex, currentFrameId);
 		mainRenderPass.SetImageIndex(frame.mImageIndex);
 		//activate pipelines that use the render pass
-		phongPipeline->Bind(frame.CommandBuffer(), currentFrameId);
-		myDirectionalLight->SetUniform(currentFrameId, *phongPipeline, frame.CommandBuffer());
-		phongPipeline->ActivateShadowMap(frame.mImageIndex, frame.CommandBuffer());
-		camera->SetUniform(currentFrameId, *phongPipeline, frame.CommandBuffer());
-		for (auto& o : phongPipeline->GetRenderables())
+		sciFiMetalPipeline->Bind(frame.CommandBuffer(), currentFrameId);
+		myDirectionalLight->SetUniform(currentFrameId, *sciFiMetalPipeline, frame.CommandBuffer());
+		sciFiMetalPipeline->ActivateShadowMap(frame.mImageIndex, frame.CommandBuffer());
+		camera->SetUniform(currentFrameId, *sciFiMetalPipeline, frame.CommandBuffer());
+		for (auto& o : sciFiMetalPipeline->GetRenderables())
 		{
 			if (o != nullptr) {
-				o->SetUniforms(currentFrameId, *phongPipeline, frame.CommandBuffer());
-				phongPipeline->Draw(*o, frame.CommandBuffer());
+				o->SetUniforms(currentFrameId, *sciFiMetalPipeline, frame.CommandBuffer());
+				sciFiMetalPipeline->Draw(*o, frame.CommandBuffer());
 			}
 		}
-		phongPipeline->Unbind(frame.CommandBuffer());
+		sciFiMetalPipeline->Unbind(frame.CommandBuffer());
 		//draw imgui as part of the main render pass
 		ImGui::Render();
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), frame.CommandBuffer());
@@ -217,7 +218,7 @@ int main(int argc, char** argv)
 	//beginning shutdown
 	syncService.WaitDeviceIdle(); //wait for everything
 
-	delete phongPipeline;
+	delete sciFiMetalPipeline;
 	delete directionaLightShadowMapPipeline;
 	delete floorMesh;
 	delete monkeyMesh;

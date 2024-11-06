@@ -19,6 +19,7 @@ layout(set = 3, binding = 0) uniform DirectionalLightProperties {
 } directionalLight;
 layout(set = 4, binding = 0) uniform sampler phongSampler; //VK_DESCRIPTOR_TYPE_SAMPLER
 layout(set = 4, binding = 1) uniform texture2D phongDiffuse; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+layout(set = 4, binding = 2) uniform texture2D phongSpecular; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
 
 float calculateShadow(vec4 fragShadowCoord) {
     float bias = 0.001; //TODO shadows: use vk's bias infra. This exists due to shadow acne
@@ -29,16 +30,25 @@ float calculateShadow(vec4 fragShadowCoord) {
 
 void main()
 {
-    vec3 color = vec3(1,0,0);
     vec3 normal = normalize(fragNormal);
     vec3 lightDirection = normalize(-directionalLight.direction);
     float diff = max(dot(lightDirection, normal), 0.0f);
+    //diffuse component
     vec3 diffuseColor = diff * 
         directionalLight.colorAndIntensity.rgb *
         directionalLight.colorAndIntensity.a *
         texture(sampler2D(phongDiffuse, phongSampler), fragTexCoord).xyz;
+    //specular component
+    vec3 viewDirection = normalize(camera.viewPos - fragPosition);
+    vec3 halfwayDir = normalize(lightDirection + viewDirection);
+    float spec = pow(max(dot(normal, halfwayDir),0.0), 64.0f);
+    vec3 specularColor = spec * 
+        directionalLight.colorAndIntensity.rgb *
+        directionalLight.colorAndIntensity.a *
+        texture(sampler2D(phongSpecular, phongSampler), fragTexCoord).xyz;
+    //shadow component
     float shadow = calculateShadow(fragShadowCoord);
-    vec3 lighting = shadow * diffuseColor;
+    vec3 lighting = shadow * (diffuseColor + specularColor);
     outColor = vec4(lighting, 1.0);
 
 }

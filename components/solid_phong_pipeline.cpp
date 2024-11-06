@@ -338,9 +338,16 @@ namespace components
         phongDiffuseTextureBinding.descriptorCount = 1;
         phongDiffuseTextureBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         phongDiffuseTextureBinding.pImmutableSamplers = nullptr;
+        VkDescriptorSetLayoutBinding phongSpecularTextureBinding;
+        phongSpecularTextureBinding.binding = 2;
+        phongSpecularTextureBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        phongSpecularTextureBinding.descriptorCount = 1;
+        phongSpecularTextureBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        phongSpecularTextureBinding.pImmutableSamplers = nullptr;
+
         VkDescriptorSetLayoutCreateInfo phongTextureLayoutInfo{};
         phongTextureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        std::array< VkDescriptorSetLayoutBinding, 2> phongBindings{ phongSamplerBinding, phongDiffuseTextureBinding };
+        std::array< VkDescriptorSetLayoutBinding, 3> phongBindings{ phongSamplerBinding, phongDiffuseTextureBinding, phongSpecularTextureBinding };
         phongTextureLayoutInfo.bindingCount = phongBindings.size();
         phongTextureLayoutInfo.pBindings = phongBindings.data();
         phongTextureLayoutInfo.flags = 0;
@@ -485,7 +492,7 @@ namespace components
         phongSamplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
         phongSamplerWrite.descriptorCount = 1;
         phongSamplerWrite.pImageInfo = &phongSamplerInfo;
-        // Descriptor write for the texture (binding 1)
+        // Descriptor write for the diffuse texture (binding 1)
         VkDescriptorImageInfo phongDiffuseTextureInfo{};
         phongDiffuseTextureInfo.imageView = phongDiffuseImageView;
         phongDiffuseTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -497,9 +504,22 @@ namespace components
         phongDiffuseTextureWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         phongDiffuseTextureWrite.descriptorCount = 1;
         phongDiffuseTextureWrite.pImageInfo = &phongDiffuseTextureInfo;
+        // Descriptor write for the specular texture (binding 2)
+        VkDescriptorImageInfo phongSpecularTextureInfo{};
+        phongSpecularTextureInfo.imageView = phongDiffuseImageView;
+        phongSpecularTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        VkWriteDescriptorSet phongSpecularTextureWrite{};
+        phongSpecularTextureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        phongSpecularTextureWrite.dstSet = mPhongTexturesDescriptorSet;
+        phongSpecularTextureWrite.dstBinding = 2; // Binding index for texture
+        phongSpecularTextureWrite.dstArrayElement = 0;
+        phongSpecularTextureWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        phongSpecularTextureWrite.descriptorCount = 1;
+        phongSpecularTextureWrite.pImageInfo = &phongSpecularTextureInfo;
+
         // Update the descriptor set with both writes
-        std::array<VkWriteDescriptorSet, 2> phongDescriptorWrites = { 
-            phongSamplerWrite, phongDiffuseTextureWrite 
+        std::array<VkWriteDescriptorSet, 3> phongDescriptorWrites = { 
+            phongSamplerWrite, phongDiffuseTextureWrite, phongSpecularTextureWrite
         };
         vkUpdateDescriptorSets(device, 
             static_cast<uint32_t>(phongDescriptorWrites.size()),
