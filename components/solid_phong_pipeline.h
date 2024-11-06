@@ -63,6 +63,7 @@ namespace components
         ring_buffer_t<VkDescriptorSet> mModelDescriptorSet;
 
         std::vector<VkDescriptorSet> mShadowMapDescriptorSet;
+        VkDescriptorSet mPhongTexturesDescriptorSet;
         
         ring_buffer_t<VkBuffer> mDirectionalLightBuffer;
         ring_buffer_t<VkDeviceMemory> mDirectionalLightMemory;
@@ -75,7 +76,8 @@ namespace components
         void CreateDescriptorPool();
         void CreateCameraBuffer();
         void CreateDirectionalLightDataBuffer();
-        void CreateDescriptorSet(const std::vector<VkImageView>& shadowMapImageViews);
+        void CreateDescriptorSet(const std::vector<VkImageView>& shadowMapImageViews,
+            VkSampler phongSampler, VkImageView phongDiffuseImageView);
         void CreatePipelineLayout();
         void CreateModelBuffer();
         VkShaderModule mVertexShader, mFragmentShader;
