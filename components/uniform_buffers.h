@@ -22,9 +22,8 @@ namespace components
         alignas(16) glm::vec4 colorAndIntensity;
     };
 
-    struct alignas(128) PhongProperties {
-        alignas(128) glm::vec3 ambientColor;
-        alignas(128) float ambientStrength;
-        alignas(128) float specularStrength;
+    struct alignas(16) PhongProperties {
+        alignas(16) glm::vec4 ambientColorAndStrength;
+        alignas(16) glm::vec4 specularStrength;
     };
 }

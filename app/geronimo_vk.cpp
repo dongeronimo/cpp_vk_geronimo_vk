@@ -89,9 +89,15 @@ int main(int argc, char** argv)
 	camera->mPosition = { 5, 5, 5};
 	camera->LookTo({ 0,0,0 });
 	///////////////Create the game objects
+	const int ambientStrenght = 0.05f;
+	const glm::vec3 ambientColor = glm::vec3(1, 1, 1);
 	components::Renderable* myBox1 = new components::Renderable("box1", *boxMesh);
 	myBox1->mPosition = {-3,0,0};
 	myBox1->EnqueueAnimation(std::make_shared<components::animations::RotateAroundForever>(glm::vec3(0, 1, 0), 90.0f, myBox1));
+	myBox1->mPhongProperties->mAmbientColor = ambientColor;
+	myBox1->mPhongProperties->mAmbientStrength = ambientStrenght;
+	myBox1->mPhongProperties->mSpecularStrength = 64.0f;
+
 	directionaLightShadowMapPipeline->AddRenderable(myBox1);
 	sciFiMetalPipeline->AddRenderable(myBox1);
 	gObjectsList.push_back(myBox1);
@@ -102,19 +108,26 @@ int main(int argc, char** argv)
 	myMonkey->LookTo({ 100,0,0 });
 	directionaLightShadowMapPipeline->AddRenderable(myMonkey);
 	sciFiMetalPipeline->AddRenderable(myMonkey);
-	myMonkey->mPhongProperties->mAmbientColor = glm::vec3(1, 0, 0);
-	myMonkey->mPhongProperties->mAmbientStrength = 0.1f;
-	myMonkey->mPhongProperties->mSpecularStrength = 64.0f;
+	myMonkey->mPhongProperties->mAmbientColor = ambientColor;
+	myMonkey->mPhongProperties->mAmbientStrength = ambientStrenght;
+	myMonkey->mPhongProperties->mSpecularStrength = 128.0f;
 	gObjectsList.push_back(myMonkey);
 
 	components::Renderable* myBox2 = new components::Renderable("box2", *boxMesh);
 	myBox2->mPosition = { 3,0,0 };
+	myBox2->mPhongProperties->mAmbientColor = ambientColor;
+	myBox2->mPhongProperties->mAmbientStrength = ambientStrenght;
+	myBox2->mPhongProperties->mSpecularStrength = 0.0f;
 	directionaLightShadowMapPipeline->AddRenderable(myBox2);
 	sciFiMetalPipeline->AddRenderable(myBox2);
 	gObjectsList.push_back(myBox2);
 
 	components::Renderable* myCone = new components::Renderable("cone", *coneMesh);
 	myCone->mPosition = { 0, 0, 3 };
+	myCone->mPhongProperties->mAmbientColor = ambientColor;
+	myCone->mPhongProperties->mAmbientStrength = ambientStrenght;
+	myCone->mPhongProperties->mSpecularStrength = 1024.0f;
+
 	directionaLightShadowMapPipeline->AddRenderable(myCone);
 	sciFiMetalPipeline->AddRenderable(myCone);
 	gObjectsList.push_back(myCone);

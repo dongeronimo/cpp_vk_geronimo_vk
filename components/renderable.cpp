@@ -71,9 +71,8 @@ namespace components {
 
     void RenderablePhongProperties::SetUniform(uint32_t currentFrame, const vk::Pipeline& pipeline, VkCommandBuffer cmdBuffer)
     {
-        mPhongData.ambientColor = this->mAmbientColor;
-        mPhongData.ambientStrength = this->mAmbientStrength;
-        mPhongData.specularStrength = this->mSpecularStrength;
+        mPhongData.ambientColorAndStrength = glm::vec4(this->mAmbientColor, this->mAmbientStrength);
+        mPhongData.specularStrength = glm::vec4(this->mSpecularStrength);
         PhongPropertiesUniform::SetUniform(currentFrame, pipeline, cmdBuffer);
     }
 
