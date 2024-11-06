@@ -308,24 +308,48 @@ namespace components
         directionalLightBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         directionalLightBinding.descriptorCount = 1;
         directionalLightBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        shadowMapBindings.pImmutableSamplers = nullptr;  // No immutable samplers
         VkDescriptorSetLayoutCreateInfo directionalLightLayoutInfo{};
         directionalLightLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         directionalLightLayoutInfo.bindingCount = 1;
         directionalLightLayoutInfo.pBindings = &directionalLightBinding;
         VkDescriptorSetLayout directionalLightLayout = VK_NULL_HANDLE;
         vkCreateDescriptorSetLayout(device, &directionalLightLayoutInfo, nullptr, &directionalLightLayout);
+        auto n4 = Concatenate(mName, "DirectionalLightDescriptorSetLayout");
+        SET_NAME(directionalLightLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n4.c_str());
+        ///////////////////////////////////////////////////////////////////////////////////
+        VkDescriptorSetLayoutBinding phongSamplerBinding;
+        phongSamplerBinding.binding = 0;
+        phongSamplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        phongSamplerBinding.descriptorCount = 1;
+        phongSamplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding phongDiffuseTextureBinding;
+        phongDiffuseTextureBinding.binding = 1;
+        phongDiffuseTextureBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        phongDiffuseTextureBinding.descriptorCount = 1;
+        phongDiffuseTextureBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutCreateInfo phongTextureLayoutInfo{};
+        phongTextureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        std::array< VkDescriptorSetLayoutBinding, 2> phongBindings{ phongSamplerBinding, phongDiffuseTextureBinding };
+        phongTextureLayoutInfo.bindingCount = phongBindings.size();
+        phongTextureLayoutInfo.pBindings = phongBindings.data();
+        VkDescriptorSetLayout phongLayout = VK_NULL_HANDLE;
+        vkCreateDescriptorSetLayout(device, &phongTextureLayoutInfo, nullptr, &phongLayout);
+        assert(phongLayout != VK_NULL_HANDLE);
+        auto n5 = Concatenate(mName, "phongTexturesDescriptorSetLayout");
+        SET_NAME(phongLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, n5.c_str());
+
         //Order matter!
         mDescriptorSetLayouts.push_back(modelDescriptorSetLayout); //set 0 - model matrix
         mDescriptorSetLayouts.push_back(cameraDescriptorSetLayout); //set 1 - camera (view and proj)
         mDescriptorSetLayouts.push_back(shadowMapDescriptorSetLayout); //set 2 - directional light shadow map
         mDescriptorSetLayouts.push_back(directionalLightLayout);//set 3 - directional light properties
+        mDescriptorSetLayouts.push_back(phongLayout); //set 4 - phong sampler + diffuse texture
     }
 
     void SolidPhongPipeline::CreateDescriptorPool()
     {
         const auto device = vk::Device::gDevice->GetDevice();
-        std::array<VkDescriptorPoolSize, 4> poolSizes;
+        std::array<VkDescriptorPoolSize, 6> poolSizes;
         // Camera - uniform buffer, one per frame
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
@@ -340,6 +364,11 @@ namespace components
         // Directional light data
         poolSizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[3].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+        // phong material textures
+        poolSizes[4].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+        poolSizes[4].descriptorCount = 1;
+        poolSizes[5].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        poolSizes[5].descriptorCount = 1;
         /////Create the descriptor pool/////
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -348,6 +377,7 @@ namespace components
         poolInfo.maxSets = 1+ //One for the model
             1+ //one for the camera
             1+ //one for the directional light
+            1 + 1 + //for phong textures
             5 * //a lot for the directional light shadow map sampler 
             MAX_FRAMES_IN_FLIGHT; 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS) {
