@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 	camera->mPosition = { 5, 5, 5};
 	camera->LookTo({ 0,0,0 });
 	///////////////Create the game objects
-	const int ambientStrenght = 0.05f;
+	const float ambientStrenght = 0.001f;
 	const glm::vec3 ambientColor = glm::vec3(1, 1, 1);
 	components::Renderable* myBox1 = new components::Renderable("box1", *boxMesh);
 	myBox1->mPosition = {-3,0,0};
