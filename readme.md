@@ -1,8 +1,10 @@
 # Setup
 1) Install git, cmake, vulkan, python 3.
-2) Clone repo, use cmake to generate the solution.
-3) If you are not in windows or have your python 3 in another place then change then change the path to python 3 exe in cmakeLists.txt (look for "C:/Windows/py.exe")
-4) in compile_shaders.py change the path to glslc.exe based on your vk version and where it is installed
+2) Clone repo.
+3) init git submodules (git submodule update --init)
+4) use cmake to generate the solution.
+5) If you are not in windows or have your python 3 in another place then change then change the path to python 3 exe in cmakeLists.txt 
+6) in compile_shaders.py change the path to glslc.exe based on your vk version and where it is installed
 
 # Structure
 - app/ the scene, windows and things not directly related to the graphics like the timer

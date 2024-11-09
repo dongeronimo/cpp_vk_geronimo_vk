@@ -78,6 +78,8 @@ set(ASSIMP_USE_EXTERNAL_ZLIB ON)
 set(ASSIMP_BUILD_ZLIB OFF)
 set(ASSIMP_BUILD_TESTS OFF)
 target_link_libraries(assimp  zlibstatic)
+# Vulkan memory allocator - is a git submodule
+add_subdirectory("VulkanMemoryAllocator")
 ####get the files####
 file(GLOB app_files "app/*.h" "app/*.cpp")
 file(GLOB data_structures_files "data_structures/*.h" "data_structures/*.cpp")
@@ -117,7 +119,8 @@ target_include_directories(geronimo_vk_demo PRIVATE ${glm_SOURCE_DIR})
 target_link_libraries(geronimo_vk_demo PRIVATE 
     Vulkan::Vulkan 
     glfw
-    assimp)
+    assimp
+    GPUOpen::VulkanMemoryAllocator)
 
 target_compile_definitions(geronimo_vk_demo PRIVATE 
     VK_DEBUG_LEVEL=VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT # See VkDebugUtilsMessageSeverityFlagBitsEXT @vulkan_core.h
@@ -134,10 +137,10 @@ target_compile_features(geronimo_vk_demo PRIVATE cxx_std_17)
 add_custom_command(
     TARGET geronimo_vk_demo
     POST_BUILD
-    COMMAND "C:/Users/luciano.lisboa/AppData/Local/Microsoft/WindowsApps/python3.exe" "${CMAKE_SOURCE_DIR}/copy_assets.py" "${CMAKE_SOURCE_DIR}" 
+    COMMAND "py.exe" "${CMAKE_SOURCE_DIR}/copy_assets.py" "${CMAKE_SOURCE_DIR}" 
 )
 add_custom_command(
     TARGET geronimo_vk_demo
     POST_BUILD
-    COMMAND "C:/Users/luciano.lisboa/AppData/Local/Microsoft/WindowsApps/python3.exe" "${CMAKE_SOURCE_DIR}/compile_shaders.py" "${CMAKE_SOURCE_DIR}" 
+    COMMAND "py.exe" "${CMAKE_SOURCE_DIR}/compile_shaders.py" "${CMAKE_SOURCE_DIR}" 
 )
