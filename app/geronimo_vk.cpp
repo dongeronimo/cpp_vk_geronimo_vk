@@ -19,6 +19,7 @@
 #include <memory>
 #include <app/imgui_utils.h>
 #include <vk/image.h>
+#include <mem/vma_helper.h>
 
 VkSampler LinearRepeatSampler() {
 	auto device = vk::Device::gDevice->GetDevice();
@@ -57,6 +58,8 @@ int main(int argc, char** argv)
 	instance.ChoosePhysicalDevice(VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU, vk::YES);
 	//create the device
 	vk::Device device(instance.GetPhysicalDevice(), instance.GetInstance(), instance.GetSurface(), vk::GetValidationLayerNames());
+	////////////////init vma//////////////////////////
+	mem::VmaHelper& vmaHelper = VMA_HELPER; //I make sure the vma is initialized before everything else
 	////////////////create render passes//////////////
 	components::MainRenderPass mainRenderPass;
 	components::ShadowMapRenderPass shadowMapRenderPass(DIRECTIONAL_SHADOW_MAP_SIZE, DIRECTIONAL_SHADOW_MAP_SIZE, mainRenderPass.GetNumberOfSwapChainColorAttachments());

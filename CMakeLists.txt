@@ -89,6 +89,7 @@ file(GLOB vk_files "vk/*.h" "vk/*.cpp")
 file(GLOB utils_files "utils/*.h" "utils/*.cpp")
 file(GLOB components_files "components/*.h" "components/*.cpp")
 file(GLOB io_files "io/*.h" "io/*.cpp")
+file(GLOB mem_files "mem/*h" "mem/*.cpp")
 #####Group them in a nice organization#####
 source_group("app" FILES ${app_files})
 source_group("vk" FILES ${vk_files})
@@ -99,6 +100,7 @@ source_group("utils" FILES ${utils_files})
 source_group("components" FILES ${components_files})
 source_group("io" FILES ${io_files})
 source_group("imgui" FILES ${imgui_files})
+source_group("mem" FILES ${mem_files})
 #####Create the target#####
 add_executable(geronimo_vk_demo
     ${app_files}
@@ -110,6 +112,7 @@ add_executable(geronimo_vk_demo
     ${components_files}
     ${io_files}
     ${imgui_files}
+    ${mem_files}
 )
 target_include_directories(geronimo_vk_demo PRIVATE .)
 target_include_directories(geronimo_vk_demo PRIVATE ${imgui_include_path})
@@ -120,7 +123,7 @@ target_link_libraries(geronimo_vk_demo PRIVATE
     Vulkan::Vulkan 
     glfw
     assimp
-    GPUOpen::VulkanMemoryAllocator)
+    VulkanMemoryAllocator)
 
 target_compile_definitions(geronimo_vk_demo PRIVATE 
     VK_DEBUG_LEVEL=VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT # See VkDebugUtilsMessageSeverityFlagBitsEXT @vulkan_core.h
