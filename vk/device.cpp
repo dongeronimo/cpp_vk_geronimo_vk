@@ -60,18 +60,9 @@ namespace vk {
         //we really demand swapchain. without it there is nothing to do
         assert(vk::ExtensionIsPresent(availableDeviceExtensions,
             VK_KHR_SWAPCHAIN_EXTENSION_NAME)==true);
-        //for now we only have debug build with markings. So we demand this extension.
-        //TODO release: this extensions (and the debug marks) should not be in release
-        assert(vk::ExtensionIsPresent(availableDeviceExtensions,
-            VK_EXT_DEBUG_MARKER_EXTENSION_NAME) == true);
-        //If we are in windows VMA docs say that we should enable this extension.
-        //Something to do with windows handles.
-        assert(vk::ExtensionIsPresent(availableDeviceExtensions,
-            VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME) == true);
         const std::vector<const char*> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME, //swapchain
             VK_EXT_DEBUG_MARKER_EXTENSION_NAME, //renderdoc marker
-            VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME//VMA wants that if we are in windows
         };
         deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
