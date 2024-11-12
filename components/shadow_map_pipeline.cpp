@@ -193,7 +193,6 @@ namespace components {
     {
         auto& helper = mem::VmaHelper::GetInstance();
         auto physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
-        
         VkDeviceSize size = utils::AlignedSize(sizeof(ModelUniformBuffer), 
             MAX_NUMBER_OF_OBJS, physicalDevice);
         VkDeviceSize alignment = utils::GetMinAlignment(physicalDevice);

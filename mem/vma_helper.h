@@ -3,6 +3,8 @@
 //#define VMA_STATIC_VULKAN_FUNCTIONS 0
 //#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vulkan/vulkan.h>
+#include <vk/instance.h>
+#include <utils/vk_utils.h>
 #include "vk_mem_alloc.h"
 namespace mem {
     /// <summary>
@@ -48,6 +50,32 @@ namespace mem {
             //create and map the memory
             vmaCreateBuffer(allocator, &bufferCreateInfo, &allocCreateInfo,
                 &buffer, &allocation, &allocationInfo);
+        }
+        template<class t>
+        void CreateAlignedUniformBufferFor(uint32_t amount,
+            VkBuffer& buffer,
+            VmaAllocation& allocation,
+            VmaAllocationInfo& allocInfo)
+        {
+            auto physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
+            VkDeviceSize size = utils::AlignedSize(sizeof(t),
+                amount, physicalDevice);
+
+            VkBufferCreateInfo bufferCreateInfo = {};
+            bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            bufferCreateInfo.size = size;
+            bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+            bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            //memory properties
+            VmaAllocationCreateInfo allocCreateInfo = {};
+            allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            allocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT |
+                VMA_ALLOCATION_CREATE_MAPPED_BIT;
+            //create and map the memory
+            vmaCreateBuffer(allocator, &bufferCreateInfo, &allocCreateInfo,
+                &buffer, &allocation, &allocInfo);
         }
         /// <summary>
         /// Creates an aligned uniform buffer. This function is intended to be used

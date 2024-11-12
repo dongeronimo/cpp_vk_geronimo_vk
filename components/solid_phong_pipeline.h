@@ -71,15 +71,16 @@ namespace components
         ring_buffer_t<VkBuffer> mCameraBuffer;
         ring_buffer_t<VmaAllocation> mCameraBufferAllocation;
         ring_buffer_t< VmaAllocationInfo> mCameraBufferAllocationInfo;
-        //ring_buffer_t<VkDeviceMemory> mCameraBufferMemory;
         ring_buffer_t<VkDescriptorSet> mCameraDescriptorSet;
 
         ring_buffer_t<VkBuffer> mModelBuffer;
-        ring_buffer_t<VkDeviceMemory> mModelBufferMemory;
+        ring_buffer_t<VmaAllocation> mModelBufferAllocation;
+        ring_buffer_t< VmaAllocationInfo> mModelBufferAllocationInfo;
         ring_buffer_t<VkDescriptorSet> mModelDescriptorSet;
 
         ring_buffer_t<VkBuffer> mPhongPropertiesBuffer;
-        ring_buffer_t<VkDeviceMemory> mPhongPropertiesMemory;
+        ring_buffer_t<VmaAllocation> mPhongPropertiesBufferAllocation;
+        ring_buffer_t< VmaAllocationInfo> mPhongPropertiesBufferAllocationInfo;
 
         std::vector<VkDescriptorSet> mShadowMapDescriptorSet;
         VkDescriptorSet mPhongTexturesDescriptorSet;

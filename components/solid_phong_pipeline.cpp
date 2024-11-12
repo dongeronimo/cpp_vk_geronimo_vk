@@ -166,8 +166,14 @@ namespace components
         for (auto& m : mModelBuffer) {
             vkDestroyBuffer(device, m, nullptr);
         }
-        for (auto& m : mModelBufferMemory) {
-            vkFreeMemory(device, m, nullptr);
+        for (auto& m : mModelBufferAllocation) {
+            mem::VmaHelper::GetInstance().FreeMemory(m);
+        }
+        for (auto& m : mPhongPropertiesBufferAllocation) {
+            mem::VmaHelper::GetInstance().FreeMemory(m);
+        }
+        for (auto& m : mPhongPropertiesBuffer) {
+            vkDestroyBuffer(device, m, nullptr);
         }
         for (auto& m : mDirectionalLightBuffer) {
             vkDestroyBuffer(device, m, nullptr);
@@ -651,18 +657,27 @@ namespace components
 
     void SolidPhongPipeline::CreateModelBuffer()
     {
+        //auto& helper = mem::VmaHelper::GetInstance();
+        ///////Create the camera buffer, one for each frame/////
+        //for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        //    helper.CreateUniformBufferFor<CameraUniformBuffer>(1,
+        //        mCameraBuffer[i], mCameraBufferAllocation[i],
+        //        mCameraBufferAllocationInfo[i]);
+        //}
         /////Create the model buffer, one for each frame, with size for 1000 objs/////
+        auto& helper = mem::VmaHelper::GetInstance();
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            utils::CreateAlignedBuffer(sizeof(ModelUniformBuffer), 
+            helper.CreateAlignedUniformBufferFor<ModelUniformBuffer>(
                 MAX_NUMBER_OF_OBJS,
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                mModelBuffer[i], mModelBufferMemory[i]);
-            utils::CreateAlignedBuffer(sizeof(PhongProperties),
+                mModelBuffer[i],
+                mModelBufferAllocation[i],
+                mModelBufferAllocationInfo[i]);
+            helper.CreateAlignedUniformBufferFor<PhongProperties>(
                 MAX_NUMBER_OF_OBJS,
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                mPhongPropertiesBuffer[i], mPhongPropertiesMemory[i]);
+                mPhongPropertiesBuffer[i],
+                mPhongPropertiesBufferAllocation[i],
+                mPhongPropertiesBufferAllocationInfo[i]
+            );
         }
         
     }
@@ -691,17 +706,12 @@ namespace components
             assert(mModelId != UINT32_MAX);
             static VkPhysicalDevice physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
             static auto device = vk::Device::gDevice->GetDevice();
-            void* data;
+            void* data = phong.mPhongPropertiesBufferAllocationInfo[currentFrame].pMappedData;
             VkDeviceSize alignedSize = utils::AlignedSize(sizeof(PhongProperties),
                 1, physicalDevice);
             uint32_t offset = alignedSize * mModelId;
-            vkMapMemory(device,
-                phong.mPhongPropertiesMemory[currentFrame],
-                offset, //offset
-                alignedSize, //size
-                0, &data);
-            memcpy(data, &mPhongData, sizeof(PhongProperties));
-            vkUnmapMemory(device, phong.mPhongPropertiesMemory[currentFrame]);
+            void* finalDestinationAddr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(data) + offset);
+            memcpy(finalDestinationAddr, &mPhongData, sizeof(PhongProperties));
         }
     }
     void SolidPhongPipeline::Draw(components::Renderable& r, VkCommandBuffer cmdBuffer, uint32_t currentFrame)
@@ -735,26 +745,12 @@ namespace components
             const SolidPhongPipeline& phong = dynamic_cast<const SolidPhongPipeline&>(pipeline);
             //map model data and copy to the gpu, mind the offsets and aligned size
             const auto device = vk::Device::gDevice->GetDevice();
-            void* data;
+            void* data = phong.mModelBufferAllocationInfo[currentFrame].pMappedData;
             VkDeviceSize alignedSize = utils::AlignedSize(sizeof(ModelUniformBuffer),
                 1, physicalDevice);
             uint32_t offset = alignedSize * mModelId;
-            vkMapMemory(device,
-                phong.mModelBufferMemory[currentFrame],
-                offset, //offset
-                alignedSize, //size
-                0, &data);
-            memcpy(data, &mModelData, sizeof(ModelUniformBuffer));
-            vkUnmapMemory(device, phong.mModelBufferMemory[currentFrame]);
-            //bind model descriptor set
-            //vkCmdBindDescriptorSets(cmdBuffer,
-            //    VK_PIPELINE_BIND_POINT_GRAPHICS,
-            //    phong.mPipelineLayout,
-            //    0, //set 0 
-            //    1,
-            //    &phong.mModelDescriptorSet[currentFrame],
-            //    1, //number of dynamic offsets
-            //    &offset); //dynamic offset
+            void* finalDestinationAddr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(data) + offset);
+            memcpy(finalDestinationAddr, &mModelData, sizeof(ModelUniformBuffer));
         }
         if (pipeline.mHash == utils::Hash("DirectionalShadowMapPipeline"))
         {
