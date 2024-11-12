@@ -765,17 +765,17 @@ namespace components
             const DirectionalLightShadowMapPipeline& dsm = dynamic_cast<const DirectionalLightShadowMapPipeline&>(pipeline);
             //map model data and copy to the gpu, mind the offsets and aligned size
             const auto device = vk::Device::gDevice->GetDevice();
-            void* data;
+            
+            void* data = dsm.mModelAllocationInfo[currentFrame].pMappedData;
+            assert(data != nullptr);
+            uintptr_t dataAsNumber = reinterpret_cast<uintptr_t>(data);
+
             VkDeviceSize alignedSize = utils::AlignedSize(sizeof(ModelUniformBuffer),
                 1, physicalDevice);
             uint32_t offset = alignedSize * mModelId;
-            vkMapMemory(device,
-                dsm.mModelBufferMemory[currentFrame],
-                offset, //offset
-                alignedSize, //size
-                0, &data);
+            dataAsNumber = dataAsNumber + offset;
+            data = reinterpret_cast<void*>(dataAsNumber);
             memcpy(data, &mModelData, sizeof(ModelUniformBuffer));
-            vkUnmapMemory(device, dsm.mModelBufferMemory[currentFrame]);
             //bind model descriptor set
             vkCmdBindDescriptorSets(cmdBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,

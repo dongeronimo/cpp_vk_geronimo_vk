@@ -248,5 +248,6 @@ int main(int argc, char** argv)
 	delete myBox2;
 	delete myCone;
 	delete myMonkey;
+	mem::VmaHelper::Destroy();
 	return 0;
 }

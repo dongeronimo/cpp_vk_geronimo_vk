@@ -3,6 +3,8 @@ project(geronimo_vk VERSION 0.1)
 # Enable C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(PYTHON_PATH "C:/Users/luciano.lisboa/AppData/Local/Microsoft/WindowsApps/python3.exe")
 # Set policy CMP0077
 if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
@@ -140,10 +142,10 @@ target_compile_features(geronimo_vk_demo PRIVATE cxx_std_17)
 add_custom_command(
     TARGET geronimo_vk_demo
     POST_BUILD
-    COMMAND "py.exe" "${CMAKE_SOURCE_DIR}/copy_assets.py" "${CMAKE_SOURCE_DIR}" 
+    COMMAND "${PYTHON_PATH}" "${CMAKE_SOURCE_DIR}/copy_assets.py" "${CMAKE_SOURCE_DIR}" 
 )
 add_custom_command(
     TARGET geronimo_vk_demo
     POST_BUILD
-    COMMAND "py.exe" "${CMAKE_SOURCE_DIR}/compile_shaders.py" "${CMAKE_SOURCE_DIR}" 
+    COMMAND "${PYTHON_PATH}" "${CMAKE_SOURCE_DIR}/compile_shaders.py" "${CMAKE_SOURCE_DIR}" 
 )

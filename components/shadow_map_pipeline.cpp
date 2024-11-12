@@ -9,6 +9,7 @@
 #include "solid_phong_pipeline.h"
 #include <vk/instance.h>
 #include <algorithm>
+#include <mem/vma_helper.h>
 std::string smp_name = "DirectionalShadowMapPipeline";
 namespace components {
     DirectionalLightShadowMapPipeline::DirectionalLightShadowMapPipeline(const vk::RenderPass& rp)
@@ -30,13 +31,18 @@ namespace components {
     DirectionalLightShadowMapPipeline::~DirectionalLightShadowMapPipeline()
     {
         const auto device = vk::Device::gDevice->GetDevice();
+        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            vkDestroyBuffer(device, mModelBuffer[i], nullptr);
+            mem::VmaHelper::GetInstance().FreeMemory(mModelAllocation[i]);
+        }
+        //TODO memory: clear the resources
         //master: missing deletions
-        for (auto& x : mModelBufferMemory) {
-            vkFreeMemory(device, x, nullptr);
-        }
-        for (auto& x : mModelBuffer) {
-            vkDestroyBuffer(device, x, nullptr);
-        }
+        //for (auto& x : mModelBufferMemory) {
+        //    vkFreeMemory(device, x, nullptr);
+        //}
+        //for (auto& x : mModelBuffer) {
+        //    vkDestroyBuffer(device, x, nullptr);
+        //}
         ////////////////////////////
         vkDestroyShaderModule(device, mVertexShader, nullptr);
         vkDestroyShaderModule(device, mFragmentShader, nullptr);
@@ -185,18 +191,32 @@ namespace components {
 
     void DirectionalLightShadowMapPipeline::CreateModelBuffer()
     {
-        /////Create the model buffer, one for each frame, with size for 1000 objs/////
+        auto& helper = mem::VmaHelper::GetInstance();
+        auto physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
+        
+        VkDeviceSize size = utils::AlignedSize(sizeof(ModelUniformBuffer), 
+            MAX_NUMBER_OF_OBJS, physicalDevice);
+        VkDeviceSize alignment = utils::GetMinAlignment(physicalDevice);
+        
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            utils::CreateAlignedBuffer(sizeof(ModelUniformBuffer),
-                MAX_NUMBER_OF_OBJS,
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                mModelBuffer[i], mModelBufferMemory[i]);
-            auto nb = Concatenate(mName, "ModelBuffer", i);
-            SET_NAME(mModelBuffer[i], VK_OBJECT_TYPE_BUFFER, nb.c_str());
-            auto nm = Concatenate(mName, "ModelMemory", i);
-            SET_NAME(mModelBufferMemory[i], VK_OBJECT_TYPE_DEVICE_MEMORY, nm.c_str());
+            helper.CreateAlignedUniformBuffer(size,
+                alignment, 1,
+                mModelBuffer[i],
+                mModelAllocation[i],
+                mModelAllocationInfo[i]);
         }
+        /////Create the model buffer, one for each frame, with size for 1000 objs/////
+        //for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        //    utils::CreateAlignedBuffer(sizeof(ModelUniformBuffer),
+        //        MAX_NUMBER_OF_OBJS,
+        //        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        //        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        //        mModelBuffer[i], mModelBufferMemory[i]);
+        //    auto nb = Concatenate(mName, "ModelBuffer", i);
+        //    SET_NAME(mModelBuffer[i], VK_OBJECT_TYPE_BUFFER, nb.c_str());
+        //    auto nm = Concatenate(mName, "ModelMemory", i);
+        //    SET_NAME(mModelBufferMemory[i], VK_OBJECT_TYPE_DEVICE_MEMORY, nm.c_str());
+        //}
     }
 
     void DirectionalLightShadowMapPipeline::CreatePipelineLayout()
