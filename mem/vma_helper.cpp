@@ -5,23 +5,20 @@
 #include "vk_mem_alloc.h"
 #include <utils/vk_utils.h>
 
-void mem::VmaHelper::CreateAlignedUniformBuffer(
+void mem::VmaHelper::CreateAlignedBuffer(
     VkDeviceSize bufferSize,
     VkDeviceSize minAlignment,
     uint32_t amount,
     VkBuffer& buffer,
+    VkBufferUsageFlags bufferUsage,
     VmaAllocation& allocation,
     VmaAllocationInfo& allocInfo
     )
 {
-    //dynamic uniform buffer properties
-    //const VkDeviceSize alignedSize = utils::AlignedSize(bufferSize, 1,
-    //    vk::Instance::gInstance->GetPhysicalDevice());
-    //alignedSize = (bufferSize + minAlignment - 1) & ~(minAlignment - 1);
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferCreateInfo.size = bufferSize * amount;
-    bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    bufferCreateInfo.usage = bufferUsage;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     //memory properties
     VmaAllocationCreateInfo allocCreateInfo = {};
@@ -35,15 +32,27 @@ void mem::VmaHelper::CreateAlignedUniformBuffer(
         &buffer, &allocation, &allocInfo);
     
 }
+void mem::VmaHelper::CreateBufferInGPU(VkDeviceSize bufferSize, uint32_t amount, VkBuffer& buffer, VkBufferUsageFlags bufferUsage, VmaAllocation& allocation, VmaAllocationInfo& allocInfo)
+{
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.size = bufferSize * amount;
+    bufferCreateInfo.usage = bufferUsage;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    //memory properties
+    VmaAllocationCreateInfo allocCreateInfo = {};
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    allocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    allocCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+    //create and map the memory
+    vmaCreateBuffer(allocator, &bufferCreateInfo, &allocCreateInfo,
+        &buffer, &allocation, &allocInfo);
+
+}
 void mem::VmaHelper::FreeMemory(VmaAllocation& allocation)
 {
     vmaFreeMemory(allocator, allocation);
 }
-//void mem::VmaHelper::DestroyBuffer(VkBuffer& buffer, VmaAllocation& allocation)
-//{
-//    vmaDestroyBuffer(allocator, buffer, allocation);
-//    vmaUnmapMemory(allocator, allocation);
-//}
 mem::VmaHelper::VmaHelper()
 {
     const VkDevice device = vk::Device::gDevice->GetDevice();
@@ -63,4 +72,6 @@ mem::VmaHelper::VmaHelper()
     vmaCreateAllocator(&allocatorCreateInfo, &allocator);
 
 }
+
+
 

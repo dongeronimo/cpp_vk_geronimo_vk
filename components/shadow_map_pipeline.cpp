@@ -198,11 +198,19 @@ namespace components {
         VkDeviceSize alignment = utils::GetMinAlignment(physicalDevice);
         
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            helper.CreateAlignedUniformBuffer(size,
-                alignment, 1,
+            helper.CreateAlignedUniformBufferFor<ModelMatrixUniform>(
+                MAX_NUMBER_OF_OBJS,
                 mModelBuffer[i],
                 mModelAllocation[i],
-                mModelAllocationInfo[i]);
+                mModelAllocationInfo[i]
+            );
+            //helper.CreateAlignedBuffer(size,
+            //    alignment, 
+            //    1,
+            //    mModelBuffer[i],
+            //    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            //    mModelAllocation[i],
+            //    mModelAllocationInfo[i]);
         }
         /////Create the model buffer, one for each frame, with size for 1000 objs/////
         //for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {

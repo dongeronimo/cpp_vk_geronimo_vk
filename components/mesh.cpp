@@ -4,127 +4,93 @@
 #include <stdexcept>
 #include <utils/vk_utils.h>
 #include <vk/debug_utils.h>
-#define _256mb 256 * 1024 * 1024
-static VkBuffer gMeshBuffer = VK_NULL_HANDLE;
-static VkDeviceMemory gMeshMemory = VK_NULL_HANDLE;
-uint32_t meshCounter = 0;
-uintptr_t gMemoryCursor = 0;
+//#define _256mb 256 * 1024 * 1024
+//static VkBuffer gMeshBuffer = VK_NULL_HANDLE;
+//static VkDeviceMemory gMeshMemory = VK_NULL_HANDLE;
+//uint32_t meshCounter = 0;
+//uintptr_t gMemoryCursor = 0;
 
 namespace components {
     Mesh::Mesh(io::MeshData& md)
     {
-        assert(vk::Device::gDevice->GetDevice() != VK_NULL_HANDLE);
-        assert(vk::Device::gDevice->GetCommandPool() != VK_NULL_HANDLE);
-        assert(vk::Device::gDevice->GetGraphicsQueue() != VK_NULL_HANDLE);
-        InitGlobalMeshBufferIfNotInitialized();
-        assert(gMeshBuffer != nullptr);
-        assert(gMeshMemory != nullptr);
-        meshCounter++;
-        std::vector<components::Vertex> vertices(md.vertices.size());
+        VkPhysicalDevice physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
+        //////1) create the local buffer and copy the content to it
+        std::vector<components::Vertex> vertexes(md.vertices.size());
         for (auto i = 0; i < md.vertices.size(); i++) {
-            vertices[i].pos = md.vertices[i];
-            vertices[i].uv0 = md.uv0s[i];
-            vertices[i].normal = md.normals[i];
+            vertexes[i].pos = md.vertices[i];
+            vertexes[i].uv0 = md.uv0s[i];
+            vertexes[i].normal = md.normals[i];
         }
-        std::vector<uint16_t> indices = md.indices;
-        CopyDataToGlobalBuffer(vertices, indices);
+        //now the data is in a good format for the transfer, we can memcpy from meshData
+        const size_t meshSizeInBytes = sizeof(vertexes[0]) * vertexes.size();
+        auto& helper = mem::VmaHelper::GetInstance();
+        VkBuffer meshStagingBuffer;
+        VmaAllocation meshStagingAllocation;
+        VmaAllocationInfo meshStagingAllocationInfo;
+        helper.CreateAlignedBuffer(meshSizeInBytes,
+            utils::GetMinAlignment(physicalDevice),
+            1,
+            meshStagingBuffer,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            meshStagingAllocation,
+            meshStagingAllocationInfo);
+        helper.CopyToAllocation(vertexes.data(),
+            meshStagingAllocation, 0, meshSizeInBytes);
+        const size_t indexSizeInBytes = md.indices.size() * sizeof(uint16_t);
+        VkBuffer indexStagingBuffer;
+        VmaAllocation indexStagingBufferAllocation;
+        VmaAllocationInfo indexStagingBufferAllocationInfo;
+        helper.CreateAlignedBuffer(indexSizeInBytes,
+            utils::GetMinAlignment(physicalDevice),
+            1,
+            indexStagingBuffer,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            indexStagingBufferAllocation,
+            indexStagingBufferAllocationInfo);
+        helper.CopyToAllocation(md.indices.data(),
+            indexStagingBufferAllocation, 0, indexSizeInBytes);
+        //////2) create the gpu buffer
+        helper.CreateBufferInGPU(meshSizeInBytes,
+            1,
+            mMeshBuffer,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            mMeshAllocation,
+            mMeshAllocationInfo);
+        helper.CreateBufferInGPU(indexSizeInBytes,
+            1,
+            mIndexBuffer,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            mIndexAllocation,
+            mIndexAllocationInfo);
+        //////3) copy from the local buffer to the gpu buffer
+        VkCommandBuffer vbCopyCommandBuffer = vk::Device::gDevice->CreateCommandBuffer(
+            "vertex buffer copy command buffer");
+        vk::Device::gDevice->BeginRecordingCommands(vbCopyCommandBuffer);
+        vk::Device::gDevice->CopyBuffer(0, 0, meshSizeInBytes,
+            vbCopyCommandBuffer, meshStagingBuffer, mMeshBuffer);
+        vk::Device::gDevice->CopyBuffer(0, 0, indexSizeInBytes,
+            vbCopyCommandBuffer, indexStagingBuffer, mIndexBuffer);
+        vk::Device::gDevice->SubmitAndFinishCommands(vbCopyCommandBuffer);
+        //////4) delete local buffer
+        vkDestroyBuffer(vk::Device::gDevice->GetDevice(), meshStagingBuffer, nullptr);
+        vkDestroyBuffer(vk::Device::gDevice->GetDevice(), indexStagingBuffer, nullptr);
+        helper.FreeMemory(meshStagingAllocation);
+        helper.FreeMemory(indexStagingBufferAllocation);
+        mNumberOfIndices = md.indices.size();
     }
     void Mesh::Bind(VkCommandBuffer cmd)const
     {
-        assert(mIndexesOffset != LLONG_MAX);
-        assert(mVertexesOffset != LLONG_MAX);
-        vkCmdBindVertexBuffers(cmd, 0, 1, &gMeshBuffer, &mVertexesOffset);
-        vkCmdBindIndexBuffer(cmd, gMeshBuffer, mIndexesOffset, VK_INDEX_TYPE_UINT16);
-
+        VkDeviceSize meshOffsets{ 0 };
+        vkCmdBindVertexBuffers(cmd, 0, 1, &mMeshBuffer, &meshOffsets);
+        vkCmdBindIndexBuffer(cmd, mIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
     }
     Mesh::~Mesh() {
-        meshCounter--;
-        //all meshes are gone, destroy the global buffer
-        if (meshCounter == 0) {
-            vkFreeMemory(vk::Device::gDevice->GetDevice(), gMeshMemory, nullptr);
-            vkDestroyBuffer(vk::Device::gDevice->GetDevice(), gMeshBuffer, nullptr);
-        }
+        auto device = vk::Device::gDevice->GetDevice();
+        auto& helper = mem::VmaHelper::GetInstance();
+        vkDestroyBuffer(device, mMeshBuffer, nullptr);
+        vkDestroyBuffer(device, mIndexBuffer, nullptr);
+        helper.FreeMemory(mMeshAllocation);
+        helper.FreeMemory(mIndexAllocation);
     }
-    void Mesh::InitGlobalMeshBufferIfNotInitialized()
-    {
-        if (gMeshBuffer == VK_NULL_HANDLE && gMeshMemory == VK_NULL_HANDLE) {
-            assert(meshCounter == 0);
-            VkDeviceSize vbSize = _256mb; //256 mb for meshes
-            //Buffer description
-            VkBufferCreateInfo vbBufferInfo{};
-            vbBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            vbBufferInfo.size = vbSize;
-            vbBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-                VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            vbBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            //create the buffer
-            if (vkCreateBuffer(vk::Device::gDevice->GetDevice(), &vbBufferInfo, nullptr, &gMeshBuffer) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create buffer!");
-            }
-            //the memory the buffer will require, not necessarely equals to the size of the data being stored
-            //in it.
-            VkMemoryRequirements memRequirements;
-            vkGetBufferMemoryRequirements(vk::Device::gDevice->GetDevice(), gMeshBuffer, &memRequirements);
-            VkMemoryAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            allocInfo.allocationSize = memRequirements.size;
-            allocInfo.memoryTypeIndex = utils::FindMemoryType(memRequirements.memoryTypeBits,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            //Allocate the memory
-            if (vkAllocateMemory(vk::Device::gDevice->GetDevice(), &allocInfo, nullptr, &gMeshMemory) != VK_SUCCESS) {
-                throw std::runtime_error("failed to allocate buffer memory!");
-            }
-            vkBindBufferMemory(vk::Device::gDevice->GetDevice(), gMeshBuffer, gMeshMemory, 0);
-            SET_NAME(gMeshBuffer, VK_OBJECT_TYPE_BUFFER, "Global Mesh Buffer");
-            SET_NAME(gMeshMemory, VK_OBJECT_TYPE_DEVICE_MEMORY, "Global Mesh Memory");
-        }
-    }
-    void Mesh::CopyDataToGlobalBuffer(const std::vector<Vertex>& vertexes, const std::vector<uint16_t>& indices)
-    {
-        //copy from the vectors to the gpu using staging buffers. Mind the offsets.
-        //1)Create a local buffer for the vertex buffer
-        VkDeviceSize vertexBufferSize = sizeof(vertexes[0]) * vertexes.size();
-        //creates the staging buffer
-        VkBuffer vertexStagingBuffer;
-        VkDeviceMemory vertexStagingBufferMemory;
-        utils::CreateBuffer(vertexBufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT, //Used as source from memory transfers
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, //memory is visibe to the cpu and gpu
-            vertexStagingBuffer, vertexStagingBufferMemory);
-        void* vertexStagingBufferAddress;
-        vkMapMemory(vk::Device::gDevice->GetDevice(), vertexStagingBufferMemory, 0, vertexBufferSize, 0, &vertexStagingBufferAddress);
-        memcpy(vertexStagingBufferAddress, vertexes.data(), (size_t)vertexBufferSize);
-        vkUnmapMemory(vk::Device::gDevice->GetDevice(), vertexStagingBufferMemory);
-        //2)Create a local buffer for the index buffer
-        VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
-        VkBuffer indexStagingBuffer;
-        VkDeviceMemory indexStagingBufferMemory;
-        utils::CreateBuffer(indexBufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT, //Used as source from memory transfers
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, //memory is visibe to the cpu and gpu
-            indexStagingBuffer, indexStagingBufferMemory);
-        void* indexStagingBufferAddress;
-        vkMapMemory(vk::Device::gDevice->GetDevice(), indexStagingBufferMemory, 0, indexBufferSize, 0, &indexStagingBufferAddress);
-        memcpy(indexStagingBufferAddress, indices.data(), (size_t)indexBufferSize);
-        vkUnmapMemory(vk::Device::gDevice->GetDevice(), indexStagingBufferMemory);
-        assert(gMemoryCursor + vertexBufferSize + indexBufferSize < _256mb); //Is there enough space?
-        //3)Copy the vertex and index buffer to the main buffer, increase the cursor
-        VkCommandBuffer vbCopyCommandBuffer = vk::Device::gDevice->CreateCommandBuffer("vertex buffer copy command buffer");
-        vk::Device::gDevice->BeginRecordingCommands(vbCopyCommandBuffer);
-        vk::Device::gDevice->CopyBuffer(0, gMemoryCursor, vertexBufferSize, vbCopyCommandBuffer, vertexStagingBuffer, gMeshBuffer);
-        mVertexesOffset = gMemoryCursor;
-        gMemoryCursor += vertexBufferSize;
-        vk::Device::gDevice->CopyBuffer(0, gMemoryCursor, indexBufferSize, vbCopyCommandBuffer, indexStagingBuffer, gMeshBuffer);
-        mIndexesOffset = gMemoryCursor;
-        gMemoryCursor += indexBufferSize;
-        //4)Finish execution
-        vk::Device::gDevice->SubmitAndFinishCommands(vbCopyCommandBuffer);
-        mNumberOfIndices = static_cast<uint16_t>(indices.size());
-        //they have outlived their usefulness.
-        vkDestroyBuffer(vk::Device::gDevice->GetDevice(), vertexStagingBuffer, nullptr);
-        vkDestroyBuffer(vk::Device::gDevice->GetDevice(), indexStagingBuffer, nullptr);
-        vkFreeMemory(vk::Device::gDevice->GetDevice(), vertexStagingBufferMemory, nullptr);
-        vkFreeMemory(vk::Device::gDevice->GetDevice(), indexStagingBufferMemory, nullptr);
-    }
+
 }

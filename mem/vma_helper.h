@@ -78,11 +78,7 @@ namespace mem {
                 &buffer, &allocation, &allocInfo);
         }
         /// <summary>
-        /// Creates an aligned uniform buffer. This function is intended to be used
-        /// to create uniform buffers that will receive data via memcpy so the memory
-        /// is VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT, VMA_ALLOCATION_CREATE_MAPPED_BIT,
-        /// VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT and VK_MEMORY_PROPERTY_HOST_COHERENT_BIT.
-        /// That means that you can get the VmaAllocationInfo::pMappedData and memcpy to it.
+        /// Creates a mapped, coherent buffer for the given usage
         /// </summary>
         /// <param name="bufferSize"></param>
         /// <param name="minAlignment"></param>
@@ -90,11 +86,31 @@ namespace mem {
         /// <param name="buffer"></param>
         /// <param name="allocation"></param>
         /// <param name="allocInfo"></param>
-        void CreateAlignedUniformBuffer(
+        void CreateAlignedBuffer(
             VkDeviceSize bufferSize,
             VkDeviceSize minAlignment,
             uint32_t amount,
             VkBuffer& buffer,
+            VkBufferUsageFlags bufferUsage,
+            VmaAllocation& allocation,
+            VmaAllocationInfo& allocInfo
+        );
+
+        void CopyToAllocation(void* src, VmaAllocation dst, VkDeviceSize offset, VkDeviceSize sz) {
+            vmaCopyMemoryToAllocation(
+                allocator,
+                src,
+                dst,
+                offset,
+                sz
+            );
+        }
+
+        void CreateBufferInGPU(
+            VkDeviceSize bufferSize,
+            uint32_t amount,
+            VkBuffer& buffer,
+            VkBufferUsageFlags bufferUsage,
             VmaAllocation& allocation,
             VmaAllocationInfo& allocInfo
         );
