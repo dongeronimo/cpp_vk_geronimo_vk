@@ -178,8 +178,8 @@ namespace components
         for (auto& m : mDirectionalLightBuffer) {
             vkDestroyBuffer(device, m, nullptr);
         }
-        for (auto& m : mDirectionalLightMemory) {
-            vkFreeMemory(device, m, nullptr);
+        for (auto& m : mDirectionalLightBufferAllocation) {
+            mem::VmaHelper::GetInstance().FreeMemory(m);
         }
         //vkDestroyDescriptorPool(device, mDescriptorPool, nullptr);
     }
@@ -648,10 +648,13 @@ namespace components
 
     void SolidPhongPipeline::CreateDirectionalLightDataBuffer()
     {
+        auto& helper = mem::VmaHelper::GetInstance();
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            utils::CreateBuffer(sizeof(DirectionalLightPropertiesUniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                mDirectionalLightBuffer[i], mDirectionalLightMemory[i]);
+            helper.CreateUniformBufferFor<DirectionalLightPropertiesUniformBuffer>(
+                1, mDirectionalLightBuffer[i],
+                mDirectionalLightBufferAllocation[i],
+                mDirectionalLightBufferAllocationInfo[i]
+            );
         }
     }
 
@@ -787,12 +790,8 @@ namespace components
         const SolidPhongPipeline& phong = dynamic_cast<const SolidPhongPipeline&>(pipeline);
         //map camera data and copy to the gpu
         const auto device = vk::Device::gDevice->GetDevice();
-        void* data;
-        vkMapMemory(device,
-            phong.mDirectionalLightMemory[currentFrame],
-            0, sizeof(DirectionalLightPropertiesUniformBuffer), 0, &data);
+        void* data = phong.mDirectionalLightBufferAllocationInfo[currentFrame].pMappedData;
         memcpy(data, &mLightData, sizeof(DirectionalLightPropertiesUniformBuffer));
-        vkUnmapMemory(device, phong.mDirectionalLightMemory[currentFrame]);
         //bind camera descriptor set
         vkCmdBindDescriptorSets(cmdBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,

@@ -86,7 +86,8 @@ namespace components
         VkDescriptorSet mPhongTexturesDescriptorSet;
         
         ring_buffer_t<VkBuffer> mDirectionalLightBuffer;
-        ring_buffer_t<VkDeviceMemory> mDirectionalLightMemory;
+        ring_buffer_t<VmaAllocation> mDirectionalLightBufferAllocation;
+        ring_buffer_t< VmaAllocationInfo> mDirectionalLightBufferAllocationInfo;
         ring_buffer_t<VkDescriptorSet> mDirectionalLightDescriptorSet;
 
         VkSampler mShadowDepthSampler = VK_NULL_HANDLE;
