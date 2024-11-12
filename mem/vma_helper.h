@@ -7,7 +7,7 @@
 namespace mem {
     /// <summary>
     /// Helps our use of VMA. It hides VMA behind itself, so the rest of the program don't
-    /// have to deal directly with it.
+    /// 
     /// </summary>
     class VmaHelper {
     public:
@@ -20,6 +20,34 @@ namespace mem {
         static VmaHelper& GetInstance() {
             static VmaHelper instance;
             return instance;
+        }
+        /// <summary>
+        /// Creates a uniform buffer for the type t, with it's allocation and
+        /// allocation information. The buffer will be host coherent, host visible,
+        /// random access and mapped. That means that you can get the VmaAllocationInfo::pMappedData 
+        /// and memcpy to it.
+        /// </summary>
+        template <class t>
+        void CreateUniformBufferFor(uint32_t amount, 
+            VkBuffer& buffer, 
+            VmaAllocation& allocation, 
+            VmaAllocationInfo& allocationInfo) 
+        {
+            VkBufferCreateInfo bufferCreateInfo = {};
+            bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            bufferCreateInfo.size = sizeof(t) * amount;
+            bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+            bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            //memory properties
+            VmaAllocationCreateInfo allocCreateInfo = {};
+            allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            allocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT |
+                VMA_ALLOCATION_CREATE_MAPPED_BIT;
+            //create and map the memory
+            vmaCreateBuffer(allocator, &bufferCreateInfo, &allocCreateInfo,
+                &buffer, &allocation, &allocationInfo);
         }
         /// <summary>
         /// Creates an aligned uniform buffer. This function is intended to be used

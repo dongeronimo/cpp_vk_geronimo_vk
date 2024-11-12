@@ -159,8 +159,8 @@ namespace components
         for (auto& m : mCameraBuffer) {
             vkDestroyBuffer(device, m, nullptr);
         }
-        for (auto& m : mCameraBufferMemory) {
-            vkFreeMemory(device, m, nullptr);
+        for (auto& m : mCameraBufferAllocation) {
+            mem::VmaHelper::GetInstance().FreeMemory(m);
         }
         //master: missing deletions
         for (auto& m : mModelBuffer) {
@@ -419,11 +419,12 @@ namespace components
 
     void SolidPhongPipeline::CreateCameraBuffer()
     {
+        auto& helper = mem::VmaHelper::GetInstance();
         /////Create the camera buffer, one for each frame/////
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            utils::CreateBuffer(sizeof(CameraUniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                mCameraBuffer[i], mCameraBufferMemory[i]);
+            helper.CreateUniformBufferFor<CameraUniformBuffer>(1,
+                mCameraBuffer[i], mCameraBufferAllocation[i],
+                mCameraBufferAllocationInfo[i]);
         }
 
     }
@@ -672,12 +673,8 @@ namespace components
         const SolidPhongPipeline& phong = dynamic_cast<const SolidPhongPipeline&>(pipeline);
         //map camera data and copy to the gpu
         const auto device = vk::Device::gDevice->GetDevice();
-        void* data;
-        vkMapMemory(device, 
-            phong.mCameraBufferMemory[currentFrame],
-            0, sizeof(CameraUniformBuffer), 0, &data);
+        void* data = phong.mCameraBufferAllocationInfo[currentFrame].pMappedData;
         memcpy(data, &mCameraData, sizeof(CameraUniformBuffer));
-        vkUnmapMemory(device, phong.mCameraBufferMemory[currentFrame]);
         //bind camera descriptor set
         vkCmdBindDescriptorSets(cmdBuffer, 
             VK_PIPELINE_BIND_POINT_GRAPHICS, 

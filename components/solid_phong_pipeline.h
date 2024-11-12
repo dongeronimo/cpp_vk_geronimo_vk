@@ -3,6 +3,7 @@
 #include "uniform_buffers.h"
 #include "data_structures/ring_buffer.h"
 #include <vector>
+#include <mem/vma_helper.h>
 //#include "data_structures/vk_ring_buffer.h"
 //#include "data_structures/vk_dynamic_offset_buffer.h"
 const uint32_t MAX_NUMBER_OF_OBJS = 1000;
@@ -68,7 +69,9 @@ namespace components
         VkVertexInputBindingDescription BindingDescription();
         
         ring_buffer_t<VkBuffer> mCameraBuffer;
-        ring_buffer_t<VkDeviceMemory> mCameraBufferMemory;
+        ring_buffer_t<VmaAllocation> mCameraBufferAllocation;
+        ring_buffer_t< VmaAllocationInfo> mCameraBufferAllocationInfo;
+        //ring_buffer_t<VkDeviceMemory> mCameraBufferMemory;
         ring_buffer_t<VkDescriptorSet> mCameraDescriptorSet;
 
         ring_buffer_t<VkBuffer> mModelBuffer;
