@@ -2,7 +2,7 @@ import sys
 import shutil
 import os
 import subprocess
-vulkan_version = "1.3.290.0"
+vulkan_version = "1.3.268.0" #"1.3.290.0" 
 script_name = sys.argv[0]
 arguments = sys.argv[1:]
 shader_src_folder = arguments[0]+"/shaders"

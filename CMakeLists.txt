@@ -4,7 +4,8 @@ project(geronimo_vk VERSION 0.1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(PYTHON_PATH "C:/Users/luciano.lisboa/AppData/Local/Microsoft/WindowsApps/python3.exe")
+#set(PYTHON_PATH "C:/Users/luciano.lisboa/AppData/Local/Microsoft/WindowsApps/python3.exe")
+set(PYTHON_PATH "C:/Windows/py.exe")
 # Set policy CMP0077
 if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)

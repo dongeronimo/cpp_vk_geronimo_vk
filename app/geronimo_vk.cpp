@@ -20,8 +20,36 @@
 #include <app/imgui_utils.h>
 #include <vk/image.h>
 #include <mem/vma_helper.h>
+#include "libdicom.h"
+VkSampler LinearNoRepeatSampler() {
+	auto device = vk::Device::gDevice->GetDevice();
+	auto physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;
+	samplerInfo.minFilter = VK_FILTER_LINEAR;
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 0.0f;
+	VkSampler sampler;
+	vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+	return sampler;
 
+}
 VkSampler LinearRepeatSampler() {
+	
 	auto device = vk::Device::gDevice->GetDevice();
 	auto physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();
 	VkSamplerCreateInfo samplerInfo{};
@@ -51,6 +79,8 @@ VkSampler LinearRepeatSampler() {
 std::vector<components::Renderable*> gObjectsList;
 int main(int argc, char** argv)
 {
+	//load the dicom reader library
+	volumerendering::InitializeFunctions();
 	//Create the window
 	app::Window window(SCREEN_WIDTH, SCREEN_HEIGH);
 	//create the instance and choose the physical device, i want the discrete gpu
@@ -66,8 +96,14 @@ int main(int argc, char** argv)
 	//load the images, the phong pipelines rely upon then
 	vk::Texture sciFiMetalDiffuse("Sci_fi_Metal_Panel_007_basecolor.png");
 	vk::Texture sciFiSpecular("Sci_fi_Metal_Panel_007_metallic.png");
+	//load the volume 
+	//TODO loading: move that to the main loop after we create the loading screen
+	//TODO loading: move to a paralel thread after we put it on the main loop. It must not hang the UI.
+	volumerendering::LoadDicomImage("C:\\Users\\lucia\\OneDrive\\Documents\\dicoms\\Visible Human Male CT DICOM");//TODO hardcoded: the dicoms should be a folder inside the assets
 	//create the sampler to be used by the phong pipeline
 	VkSampler linearRepeatSampler = LinearRepeatSampler();
+	//and a sampler to be used by the volume rendering
+	VkSampler linearNoRepeatSampler = LinearNoRepeatSampler();
 	////create pipelines
 	components::DirectionalLightShadowMapPipeline* directionaLightShadowMapPipeline = new components::DirectionalLightShadowMapPipeline(shadowMapRenderPass);
 	components::SolidPhongPipeline* sciFiMetalPipeline = new components::SolidPhongPipeline(mainRenderPass,
