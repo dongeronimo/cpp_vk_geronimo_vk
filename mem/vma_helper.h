@@ -96,6 +96,13 @@ namespace mem {
             VmaAllocationInfo& allocInfo
         );
 
+        void CreateImage(VkImageCreateInfo& imgCreateInfo,
+            VkMemoryPropertyFlags memoryFlags,
+            VmaAllocationCreateFlags allocationFlags,
+            VkImage& outImage,
+            VmaAllocation& outAllocation,
+            VmaAllocationInfo& outAllocationInfo);
+
         void CopyToAllocation(void* src, VmaAllocation dst, VkDeviceSize offset, VkDeviceSize sz) {
             vmaCopyMemoryToAllocation(
                 allocator,

@@ -48,6 +48,36 @@ namespace vk {
         // 4. Bind memory to image
         vkBindImageMemory(device, image, imageMemory, 0);
     }
+    void CreateImage(
+        uint32_t width, uint32_t height, VkFormat format,
+        VkImageTiling tiling, VkImageUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkImage& image, VmaAllocationCreateFlags allocationFlags,
+        VmaAllocation& allocation, VmaAllocationInfo& allocationInfo)
+    {
+        auto device = Device::gDevice->GetDevice();
+        auto physicalDevice = Instance::gInstance->GetPhysicalDevice();
+        auto& helper = mem::VmaHelper::GetInstance();
+        // 1. Image creation
+        VkImageCreateInfo imageInfo = {};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.extent.width = width;
+        imageInfo.extent.height = height;
+        imageInfo.extent.depth = 1;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.format = format;
+        imageInfo.tiling = tiling;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.usage = usage;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.flags = 0; // Optional
+        helper.CreateImage(imageInfo,
+            properties, allocationFlags, image, allocation, allocationInfo);
+        
+    }
     VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
     {
         VkImageViewCreateInfo viewInfo = {};
@@ -72,7 +102,8 @@ namespace vk {
     Texture::~Texture() {
         VkDevice device = vk::Device::gDevice->GetDevice();
         vkDestroyImage(device, mImage, nullptr);
-        vkFreeMemory(device, mMemory, nullptr);
+        mem::VmaHelper::GetInstance().FreeMemory(mImageAllocation);
+        /*vkFreeMemory(device, mMemory, nullptr);*/
         vkDestroyImageView(device, mImageView, nullptr);
     }
 
@@ -93,10 +124,15 @@ namespace vk {
         vkMapMemory(device, stagingBufferMemory, 0, filedata->size, 0, &data);
         memcpy(data, filedata->pixels.data(), filedata->size);
         vkUnmapMemory(device, stagingBufferMemory);
-        //create the image that'll receive the content that is in the buffer
-        CreateImage(filedata->w, filedata->h, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, 
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mImage, mMemory);
+        CreateImage(filedata->w, filedata->h,
+            VK_FORMAT_R8G8B8A8_SRGB,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            mImage,
+            VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+            mImageAllocation,
+            mImageAllocationInfo);
         //change the image layout from undefined to destination-of-transfer
         utils::TransitionImageLayout(mImage, VK_FORMAT_R8G8B8A8_SRGB, 
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL

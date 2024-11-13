@@ -32,6 +32,22 @@ void mem::VmaHelper::CreateAlignedBuffer(
         &buffer, &allocation, &allocInfo);
     
 }
+
+void mem::VmaHelper::CreateImage(VkImageCreateInfo& imgCreateInfo,
+    VkMemoryPropertyFlags memoryFlags,
+    VmaAllocationCreateFlags allocationFlags,
+    VkImage& outImage,
+    VmaAllocation& outAllocation,
+    VmaAllocationInfo& outAllocationInfo)
+{
+    VmaAllocationCreateInfo allocCreateInfo{};
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    allocCreateInfo.requiredFlags = memoryFlags;
+    allocCreateInfo.flags = allocationFlags;
+    vmaCreateImage(allocator, &imgCreateInfo, &allocCreateInfo,
+        &outImage, &outAllocation, &outAllocationInfo);
+}
+
 void mem::VmaHelper::CreateBufferInGPU(VkDeviceSize bufferSize, uint32_t amount, VkBuffer& buffer, VkBufferUsageFlags bufferUsage, VmaAllocation& allocation, VmaAllocationInfo& allocInfo)
 {
     VkBufferCreateInfo bufferCreateInfo = {};
@@ -72,6 +88,12 @@ mem::VmaHelper::VmaHelper()
     vmaCreateAllocator(&allocatorCreateInfo, &allocator);
 
 }
+
+//void mem::VmaHelper::CreateAlignedBufferInGPU(VkDeviceSize bufferSize, uint32_t amount, VkBuffer& buffer, VkBufferUsageFlags bufferUsage, VmaAllocation& allocation, VmaAllocationInfo& allocInfo)
+//{
+//}
+
+
 
 
 
