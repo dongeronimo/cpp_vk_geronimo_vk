@@ -28,9 +28,8 @@ void mem::VmaHelper::CreateAlignedBuffer(
     allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | 
         VMA_ALLOCATION_CREATE_MAPPED_BIT;
     //create and map the memory
-    vmaCreateBuffer(allocator, &bufferCreateInfo, &allocCreateInfo, 
+    VkResult r = vmaCreateBuffer(allocator, &bufferCreateInfo, &allocCreateInfo, 
         &buffer, &allocation, &allocInfo);
-    
 }
 
 void mem::VmaHelper::CreateImage(VkImageCreateInfo& imgCreateInfo,

@@ -4,6 +4,9 @@
 #include "device.h"
 #include "instance.h"
 #include <mem/vma_helper.h>
+namespace volumerendering {
+    struct LoadDicomImageResult;
+}
 namespace vk {
     /// <summary>
     /// Deprecated. Prefer the vma version.
@@ -38,6 +41,14 @@ namespace vk {
         VkImage& image, VmaAllocationCreateFlags allocationFlags,
         VmaAllocation& allocation, VmaAllocationInfo& allocationInfo);
     
+
+    void CreateImage(uint32_t width, uint32_t height, uint32_t depth,
+        VkFormat format,
+        VkImageTiling tiling, VkImageUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkImage& image, VmaAllocationCreateFlags allocationFlags,
+        VmaAllocation& allocation, VmaAllocationInfo& allocationInfo);
+
     VkImageView CreateImageView(VkImage image, VkFormat format, 
         VkImageAspectFlags aspectFlags);
 
@@ -54,5 +65,15 @@ namespace vk {
         VmaAllocationInfo mImageAllocationInfo;
         //VkDeviceMemory mMemory;//TODO memory: vkDeviceMemory are precious and i'll run out of if each texture creates it's own, the images should be in a big memory block with all the images
         VkImageView mImageView;
+    };
+
+    class Texture3d {
+    public:
+        Texture3d(volumerendering::LoadDicomImageResult& imageData);
+    private:
+        VkImage mImage = VK_NULL_HANDLE;
+        VmaAllocation mImageAllocation = VK_NULL_HANDLE;
+        VmaAllocationInfo mImageAllocationInfo = {};
+        VkImageView mImageView = VK_NULL_HANDLE;
     };
 }

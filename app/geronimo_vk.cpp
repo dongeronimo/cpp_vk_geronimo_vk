@@ -99,7 +99,8 @@ int main(int argc, char** argv)
 	//load the volume 
 	//TODO loading: move that to the main loop after we create the loading screen
 	//TODO loading: move to a paralel thread after we put it on the main loop. It must not hang the UI.
-	volumerendering::LoadDicomImage("C:\\Users\\lucia\\OneDrive\\Documents\\dicoms\\Visible Human Male CT DICOM");//TODO hardcoded: the dicoms should be a folder inside the assets
+	volumerendering::LoadDicomImageResult dicomImageData = volumerendering::LoadDicomImage("C:\\Users\\lucia\\OneDrive\\Documents\\dicoms\\Marching Man");//TODO hardcoded: the dicoms should be a folder inside the assets
+	vk::Texture3d dicomTexture(dicomImageData);
 	//create the sampler to be used by the phong pipeline
 	VkSampler linearRepeatSampler = LinearRepeatSampler();
 	//and a sampler to be used by the volume rendering
