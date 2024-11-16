@@ -28,6 +28,9 @@ namespace components {
 		void DestroyRenderPass();
 		void DestroyDepthBuffers();
 		void Recreate();
+		std::vector<VkFramebuffer> GetFramebuffers()const {
+			return mFramebuffers;
+		}
 	private:
 		/// <summary>
 		/// The swap chain.

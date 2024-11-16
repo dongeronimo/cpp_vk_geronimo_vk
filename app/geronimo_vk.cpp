@@ -21,6 +21,7 @@
 #include <vk/image.h>
 #include <mem/vma_helper.h>
 #include "libdicom.h"
+#include <components/volume_render_pass.h>
 VkSampler LinearNoRepeatSampler() {
 	auto device = vk::Device::gDevice->GetDevice();
 	auto physicalDevice = vk::Instance::gInstance->GetPhysicalDevice();

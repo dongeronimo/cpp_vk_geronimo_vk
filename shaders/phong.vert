@@ -1,7 +1,7 @@
 #version 450
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec2 uv0; //todo textures: not used for now
+layout(location = 2) in vec2 uv0; 
 
 layout(location = 0) out vec3 fragPosition;
 layout(location = 1) out vec3 fragNormal;
